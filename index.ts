@@ -3,7 +3,7 @@ import fs from "fs/promises";
 
 async function main() {
   console.log("🚀 Starting ZK Email SDK example");
-  
+
   console.log("📦 Initializing ZK Email SDK...");
   const sdk = initZkEmailSdk();
   console.log("✅ SDK initialized successfully");
@@ -14,7 +14,17 @@ async function main() {
     "Bisht13/SuccinctZKResidencyInvite@v3"
   );
   console.log("✅ Blueprint fetched successfully");
-  
+  const verifier = blueprint.props.verifierContract;
+  if (verifier) {
+    console.log(
+      `🏛️ Verifier contract: ${verifier.address ?? "(no address)"} on chain ${
+        verifier.chain
+      }`
+    );
+  } else {
+    console.log("🏛️ Verifier contract: not available");
+  }
+
   console.log("🛠️ Creating prover...");
   const prover = blueprint.createProver();
   console.log("✅ Prover created successfully");
@@ -31,8 +41,8 @@ async function main() {
   console.log("Proof:", proof);
 
   // Verify the proof off chain
-  console.log("🔐 Verifying proof off-chain...");
-  const verification = await blueprint.verifyProof(proof);
+  console.log("🔐 Verifying proof on-chain...");
+  const verification = await blueprint.verifyProofOnChain(proof);
   console.log("✅ Proof verification completed");
 
   console.log("Verification:", verification);
