@@ -10,6 +10,8 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@zk-email/sdk": "^2.0.6"
+    "@aztec/bb.js": "^2.0.2",
+    "@noir-lang/noir_js": "^1.0.0-beta.11",
+    "@zk-email/sdk": "^2.0.1-5"
   }
 }
