@@ -3,6 +3,10 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "bun --hot ./server.ts",
+    "start": "bun ./server.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
@@ -10,8 +14,7 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@aztec/bb.js": "^2.0.2",
-    "@noir-lang/noir_js": "^1.0.0-beta.11",
-    "@zk-email/sdk": "^2.0.1-5"
+    "@zk-email/sdk": "2.0.1-5",
+    "buffer": "^6.0.3"
   }
 }
