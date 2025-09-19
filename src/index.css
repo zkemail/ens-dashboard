@@ -95,3 +95,26 @@ button {
       var(--bg-start);
   }
 }
+
+/* Explicit theme override via data-theme attribute */
+:root[data-theme="light"] {
+  --bg-start: #ffffff;
+  --bg-end: #f7f7fb;
+  --text: #0f172a;
+  --muted: #6b7280;
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --brand: #111827;
+  --surface: rgba(255, 255, 255, 0.6);
+}
+
+:root[data-theme="dark"] {
+  --bg-start: #0b0f1a;
+  --bg-end: #101626;
+  --text: #f5f7fb;
+  --muted: #a0a7b5;
+  --card: #0f1524;
+  --border: #1f2937;
+  --brand: #e5e7eb;
+  --surface: rgba(15, 21, 36, 0.6);
+}
