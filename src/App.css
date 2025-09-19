@@ -98,6 +98,12 @@
   color: var(--muted);
 }
 
+.hero-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
 .cards {
   display: grid;
   grid-template-columns: 1fr;
