@@ -3,6 +3,7 @@ import { Web3Provider } from "./components/Web3Provider";
 import { ConnectKitButton } from "connectkit";
 import { useEffect, useState } from "react";
 import { useAccount, useEnsName } from "wagmi";
+import { useEnsNamesForAddress } from "./hooks/useEnsNames";
 
 function Page() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -20,11 +21,22 @@ function Page() {
   }, [theme]);
 
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
   const { data: ensName } = useEnsName({
     address,
     query: { enabled: Boolean(isConnected && address) },
     chainId: useAccount().chainId,
+  });
+  const {
+    names: ownedNames,
+    isLoading: isLoadingNames,
+    error: namesError,
+  } = useEnsNamesForAddress({
+    address: (address ?? "0x") as `0x${string}`,
+    chainId,
+    pageSize: 20,
+    orderBy: "createdAt",
+    orderDirection: "desc",
   });
 
   const shortAddress = address
@@ -72,10 +84,32 @@ function Page() {
         <section className="container hero">
           <h1 className="title">Ens Integration</h1>
           {isConnected ? (
-            <p className="subtitle">
-              Connected as{" "}
-              {ensName ? `${ensName} (${shortAddress})` : shortAddress}
-            </p>
+            <>
+              <p className="subtitle">
+                Connected as{" "}
+                {ensName ? `${ensName} (${shortAddress})` : shortAddress}
+              </p>
+              <div className="ens-list">
+                {isLoadingNames ? (
+                  <p className="muted">Loading ENS names…</p>
+                ) : namesError ? (
+                  <p className="muted">Could not load ENS names.</p>
+                ) : ownedNames && ownedNames.length > 0 ? (
+                  <ul className="list">
+                    {ownedNames.map((name) => (
+                      <li key={name} className="list-item">
+                        <span>{name}</span>
+                        {ensName && name === ensName ? (
+                          <span className="badge">primary</span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted">No ENS names found for this address.</p>
+                )}
+              </div>
+            </>
           ) : (
             <>
               <p className="subtitle">
