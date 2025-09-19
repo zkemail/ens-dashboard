@@ -9,15 +9,19 @@ export function NameCard({
   color: string;
   badge?: string;
 }) {
+  const href = `/name/${encodeURIComponent(name)}`;
   return (
     <li className="name-card">
-      <div className="name-left">
-        <span className="avatar" style={{ background: color }} />
-        <Link className="name-text" to={`/name/${encodeURIComponent(name)}`}>
-          {name}
-        </Link>
-      </div>
-      {badge ? <span className="badge primary">{badge}</span> : null}
+      <Link to={href} className="card-link" state={{ from: "home" }}>
+        <div className="name-left">
+          <span className="avatar" style={{ background: color }} />
+          <span className="name-text">{name}</span>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {badge ? <span className="badge primary">{badge}</span> : null}
+          <span className="pill-link">Manage</span>
+        </div>
+      </Link>
     </li>
   );
 }
