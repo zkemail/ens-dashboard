@@ -4,8 +4,6 @@ import { Routes, Route } from "react-router-dom";
 import { HomePage } from "./pages/HomePage";
 import { ProfilePage } from "./pages/ProfilePage";
 
-// legacy page code extracted to pages
-
 function App() {
   return (
     <Web3Provider>
@@ -16,7 +14,5 @@ function App() {
     </Web3Provider>
   );
 }
-
-// Profile & Home pages moved to ./pages
 
 export default App;
