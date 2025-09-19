@@ -74,6 +74,15 @@ function Page() {
     };
   }, [ownedNames, ensName]);
 
+  function colorForName(name: string) {
+    // Simple HSL hash based on name for a consistent avatar color
+    let hash = 0;
+    for (let i = 0; i < name.length; i++)
+      hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+    const hue = hash % 360;
+    return `hsl(${hue} 70% 60%)`;
+  }
+
   const shortAddress = address
     ? `${address.slice(0, 6)}…${address.slice(-4)}`
     : "";
@@ -117,7 +126,6 @@ function Page() {
 
       <main>
         <section className="container hero">
-          <h1 className="title">Ens Integration</h1>
           {isConnected ? (
             <>
               <p className="subtitle">
@@ -132,17 +140,29 @@ function Page() {
                 ) : initialList && initialList.length > 0 ? (
                   <ul className="list">
                     {initialList.map((name) => (
-                      <li key={name} className="list-item">
-                        <span>{name}</span>
+                      <li key={name} className="name-card">
+                        <div className="name-left">
+                          <span
+                            className="avatar"
+                            style={{ background: colorForName(name) }}
+                          />
+                          <span className="name-text">{name}</span>
+                        </div>
                         {ensName && name === ensName ? (
-                          <span className="badge">primary</span>
+                          <span className="badge primary">primary</span>
                         ) : null}
                       </li>
                     ))}
                     {showSubdomains &&
                       remainingSubdomains.map((name) => (
-                        <li key={name} className="list-item">
-                          <span>{name}</span>
+                        <li key={name} className="name-card">
+                          <div className="name-left">
+                            <span
+                              className="avatar"
+                              style={{ background: colorForName(name) }}
+                            />
+                            <span className="name-text">{name}</span>
+                          </div>
                         </li>
                       ))}
                   </ul>
