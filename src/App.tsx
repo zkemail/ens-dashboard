@@ -1,9 +1,13 @@
 import "./App.css";
+import { Web3Provider } from "./components/Web3Provider";
+import { ConnectKitButton } from "connectkit";
 
 function App() {
   return (
     <>
-      <h1>Hello, world!</h1>
+      <Web3Provider>
+        <ConnectKitButton />
+      </Web3Provider>
     </>
   );
 }
