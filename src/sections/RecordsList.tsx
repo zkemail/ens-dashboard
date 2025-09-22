@@ -4,7 +4,9 @@ import {
   useWriteContract,
   useAccount,
   useWaitForTransactionReceipt,
+  useReadContract,
 } from "wagmi";
+import { sepolia } from "wagmi/chains";
 import { namehash } from "viem/ens";
 import React, {
   useEffect,
@@ -39,6 +41,23 @@ const setTextAbi: Abi = [
       { name: "value", type: "string" },
     ],
     outputs: [] as unknown as AbiOutput[],
+  },
+];
+
+const TEXT_VERIFIER_ADDRESS =
+  "0xe902Bc5bcc1dc15dbDF27FfE346c31c4F8FD37DF" as `0x${string}`;
+
+const textVerifierAbi: Abi = [
+  {
+    name: "verifyTextRecord",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "node", type: "bytes32" },
+      { name: "key", type: "string" },
+      { name: "value", type: "string" },
+    ],
+    outputs: [{ type: "bool" }] as unknown as AbiOutput[],
   },
 ];
 
@@ -193,6 +212,20 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
     const value = draft ?? data ?? "";
     const disabled = !resolver || !chainId;
 
+    const isEmail = textKey === "email";
+    const node = namehash(name);
+    const { data: verifiedData, isLoading: isVerifying } = useReadContract({
+      address: TEXT_VERIFIER_ADDRESS,
+      abi: textVerifierAbi,
+      functionName: "verifyTextRecord",
+      args: [node, "email", data ?? ""],
+      chainId: sepolia.id,
+      query: {
+        enabled: isEmail && Boolean(data && data.length > 0),
+      },
+    });
+    const isVerified = verifiedData === true;
+
     const onSave = async () => {
       if (!resolver || draft === undefined) return;
       const normalized = normalizeValueForKey(textKey, draft);
@@ -296,6 +329,23 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                   disabled={isLoading}
                 />
               )}
+              {isEmail && data ? (
+                isVerifying ? (
+                  <span className="subtitle" style={{ whiteSpace: "nowrap" }}>
+                    Verifying…
+                  </span>
+                ) : (
+                  <span
+                    className="subtitle"
+                    style={{
+                      color: isVerified ? "#16a34a" : "#ef4444",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {isVerified ? "Verified" : "Unverified"}
+                  </span>
+                )
+              ) : null}
               {!isUnchanged && !validationError ? (
                 <span className="dot" title="Unsaved changes" />
               ) : null}
@@ -321,6 +371,23 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
           ) : (
             <div className="record-value">
               {renderValue(textKey, viewValue)}
+              {isEmail && viewValue ? (
+                isVerifying ? (
+                  <span className="subtitle" style={{ marginLeft: 8 }}>
+                    Verifying…
+                  </span>
+                ) : (
+                  <span
+                    className="subtitle"
+                    style={{
+                      marginLeft: 8,
+                      color: isVerified ? "#16a34a" : "#ef4444",
+                    }}
+                  >
+                    {isVerified ? "Verified" : "Unverified"}
+                  </span>
+                )
+              ) : null}
             </div>
           )}
         </div>
