@@ -266,12 +266,22 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
               ) : null}
               {textKey === "com.twitter" ? (
                 <div className="record-input-row" style={{ marginTop: 4 }}>
-                  <button
-                    className="link-cta"
-                    onClick={() => setOpenTwitterProof(true)}
+                  <span
+                    className="warning-inline"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      whiteSpace: "nowrap",
+                    }}
                   >
-                    Prove Twitter handle from email
-                  </button>
+                    <button
+                      className="link-cta"
+                      onClick={() => setOpenTwitterProof(true)}
+                    >
+                      Click here to verify
+                    </button>
+                  </span>
                 </div>
               ) : null}
             </>
