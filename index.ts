@@ -41,7 +41,9 @@ export async function main() {
   console.log("⚡ Generating proof...");
 
   // Hardcoded external inputs required by this blueprint
-  const externalInputs = [{ name: "command", value: "@thezkdev" }];
+  const externalInputs = [
+    { name: "command", value: "Link my x handle to zkfriendly.eth" },
+  ];
 
   const noirWasm = await initNoirWasm();
   const proof = await prover.generateProof(eml, externalInputs, { noirWasm });
