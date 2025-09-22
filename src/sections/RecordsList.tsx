@@ -11,6 +11,7 @@ import { COMMON_KEYS, type RecordKey } from "../features/records/constants";
 import { labelForKey } from "../features/records/validators";
 import { useRecordText } from "../features/records/useRecordText";
 import { Modal } from "../components/Modal";
+import { TwitterProofModal } from "../components/TwitterProofModal";
 
 export function RecordsList({
   name,
@@ -164,6 +165,7 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
       resetDraft,
     } = useRecordText(name, textKey);
     const [openVerifyModal, setOpenVerifyModal] = useState(false);
+    const [openTwitterProof, setOpenTwitterProof] = useState(false);
 
     const label = labelForKey(textKey);
 
@@ -262,6 +264,16 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                   </span>
                 </div>
               ) : null}
+              {textKey === "com.twitter" ? (
+                <div className="record-input-row" style={{ marginTop: 4 }}>
+                  <button
+                    className="link-cta"
+                    onClick={() => setOpenTwitterProof(true)}
+                  >
+                    Prove Twitter handle from email
+                  </button>
+                </div>
+              ) : null}
             </>
           ) : (
             <div className="record-value">
@@ -322,6 +334,13 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
               </p>
             ) : null}
           </Modal>
+          {textKey === "com.twitter" ? (
+            <TwitterProofModal
+              open={openTwitterProof}
+              onClose={() => setOpenTwitterProof(false)}
+              defaultHandle={value}
+            />
+          ) : null}
         </div>
       </li>
     );

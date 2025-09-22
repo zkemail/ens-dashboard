@@ -1,0 +1,100 @@
+import { useCallback, useMemo, useState } from "react";
+import { Buffer as BufferPolyfill } from "buffer";
+
+// Browser polyfills for libs expecting Node-like globals
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).numberIsNaN ??= Number.isNaN;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).Buffer ??= BufferPolyfill;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).process ??= { env: {} };
+// Ensure NODE_ENV is a string. Some deps call process.env.NODE_ENV.slice()
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const __proc: any = (globalThis as any).process;
+__proc.env ??= {};
+if (typeof __proc.env.NODE_ENV !== "string") {
+  __proc.env.NODE_ENV = "development";
+}
+// Some libs call process.version.slice or read versions.node
+__proc.version ??= "v18.0.0";
+__proc.versions ??= {};
+if (typeof __proc.versions.node !== "string") {
+  __proc.versions.node = "18.0.0";
+}
+
+type ProofResult = {
+  proof: unknown;
+  verification: unknown;
+};
+
+export function useTwitterProof() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<ProofResult | null>(null);
+  const [step, setStep] = useState<string>("");
+
+  const run = useCallback(
+    async (emlFile: File, handle: string) => {
+      setIsLoading(true);
+      setError(null);
+      setResult(null);
+      try {
+        if (!emlFile) throw new Error("Please choose a .eml file");
+        const fileOk = emlFile.name?.toLowerCase().endsWith(".eml");
+        if (!fileOk) throw new Error("File must be a .eml email export");
+        const normalizedHandle = normalizeTwitterHandle(handle);
+        if (!normalizedHandle) throw new Error("Enter a valid Twitter handle");
+        setStep("read-eml");
+        const text = await emlFile.text();
+        const { default: initZkEmail } = await import("@zk-email/sdk");
+        const { initNoirWasm } = await import("@zk-email/sdk/initNoirWasm");
+        setStep("init-sdk");
+        const sdk = initZkEmail({
+          baseUrl: "https://dev-conductor.zk.email",
+          logging: { enabled: true, level: "debug" },
+        });
+        setStep("get-blueprint");
+        const blueprint = await sdk.getBlueprint("benceharomi/X_HANDLE@v2");
+        setStep("create-prover");
+        const prover = blueprint.createProver({ isLocal: true });
+
+        const externalInputs = [
+          {
+            name: "command",
+            value: normalizedHandle,
+          },
+        ];
+        setStep("init-noir");
+        const noirWasm = await initNoirWasm();
+        setStep("generate-proof");
+        const proof = await prover.generateProof(text, externalInputs, {
+          noirWasm,
+        });
+        // For now, only return the proof per requirements; skip on-chain submit and verification
+        setResult({ proof, verification: null });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("Twitter proof error at", step, e);
+        setError(step ? `${msg} (at ${step})` : msg);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [step]
+  );
+
+  const json = useMemo(
+    () => (result ? JSON.stringify(result, null, 2) : ""),
+    [result]
+  );
+
+  return { isLoading, error, result, json, run } as const;
+}
+
+function normalizeTwitterHandle(raw: string): string | null {
+  const value = String(raw || "").trim();
+  if (!value) return null;
+  const handle = value.startsWith("@") ? value.slice(1) : value;
+  const ok = /^[A-Za-z0-9_.]{1,30}$/.test(handle);
+  return ok ? `@${handle}` : null;
+}
