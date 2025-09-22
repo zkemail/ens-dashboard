@@ -338,7 +338,7 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
             <TwitterProofModal
               open={openTwitterProof}
               onClose={() => setOpenTwitterProof(false)}
-              defaultHandle={value}
+              ensName={name}
             />
           ) : null}
         </div>

@@ -34,7 +34,7 @@ export function useTwitterProof() {
   const [step, setStep] = useState<string>("");
 
   const run = useCallback(
-    async (emlFile: File, handle: string) => {
+    async (emlFile: File, command: string) => {
       setIsLoading(true);
       setError(null);
       setResult(null);
@@ -42,8 +42,8 @@ export function useTwitterProof() {
         if (!emlFile) throw new Error("Please choose a .eml file");
         const fileOk = emlFile.name?.toLowerCase().endsWith(".eml");
         if (!fileOk) throw new Error("File must be a .eml email export");
-        const normalizedHandle = normalizeTwitterHandle(handle);
-        if (!normalizedHandle) throw new Error("Enter a valid Twitter handle");
+        const commandValue = String(command || "").trim();
+        if (!commandValue) throw new Error("Command is required");
         setStep("read-eml");
         const text = await emlFile.text();
         const { default: initZkEmail } = await import("@zk-email/sdk");
@@ -61,7 +61,7 @@ export function useTwitterProof() {
         const externalInputs = [
           {
             name: "command",
-            value: normalizedHandle,
+            value: commandValue,
           },
         ];
         setStep("init-noir");
@@ -89,12 +89,4 @@ export function useTwitterProof() {
   );
 
   return { isLoading, error, result, json, run } as const;
-}
-
-function normalizeTwitterHandle(raw: string): string | null {
-  const value = String(raw || "").trim();
-  if (!value) return null;
-  const handle = value.startsWith("@") ? value.slice(1) : value;
-  const ok = /^[A-Za-z0-9_.]{1,30}$/.test(handle);
-  return ok ? `@${handle}` : null;
 }
