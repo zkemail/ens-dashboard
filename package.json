@@ -14,7 +14,7 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@zk-email/sdk": "2.0.1-5",
+    "@zk-email/sdk": "2.0.1-6",
     "buffer": "^6.0.3"
   }
 }

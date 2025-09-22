@@ -50,7 +50,7 @@ export async function main() {
 
   // Verify the proof off chain
   console.log("🔐 Verifying proof off-chain...");
-  const verification = await blueprint.verifyProof(proof);
+  const verification = await blueprint.verifyProof(proof, { noirWasm });
   console.log("✅ Proof verification completed");
 
   console.log("Verification:", verification);
