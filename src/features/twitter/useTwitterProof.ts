@@ -70,8 +70,11 @@ export function useTwitterProof() {
         const proof = await prover.generateProof(text, externalInputs, {
           noirWasm,
         });
+        setStep("offchain-verification");
+        const verification = await blueprint.verifyProof(proof, { noirWasm });
+
         // For now, only return the proof per requirements; skip on-chain submit and verification
-        setResult({ proof, verification: null });
+        setResult({ proof, verification });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         console.error("Twitter proof error at", step, e);
