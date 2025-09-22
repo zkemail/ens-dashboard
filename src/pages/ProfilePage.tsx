@@ -1,4 +1,5 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { useAccount } from "wagmi";
 import { NavBar } from "../components/NavBar";
 import { ThemeToggle } from "../components/ThemeToggle";
@@ -10,6 +11,19 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: string } };
   const { isConnected } = useAccount();
+  const [editing, setEditing] = useState(false);
+  const hasUnsaved = useRef(false);
+
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsaved.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, []);
 
   return (
     <>
@@ -46,8 +60,41 @@ export function ProfilePage() {
             </p>
           )}
 
-          <h2 className="section-title">Records</h2>
-          <RecordsList name={ensName} />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              marginTop: 16,
+            }}
+          >
+            <h2 className="section-title" style={{ margin: 0 }}>
+              Records
+            </h2>
+            {isConnected && (
+              <button
+                className="link-cta"
+                onClick={() => {
+                  if (editing && hasUnsaved.current) {
+                    const ok = confirm(
+                      "You have unsaved changes. Leave edit mode and discard them?"
+                    );
+                    if (!ok) return;
+                  }
+                  setEditing((e) => !e);
+                }}
+                aria-pressed={editing}
+              >
+                {editing ? "Done" : "Edit"}
+              </button>
+            )}
+          </div>
+          <RecordsList
+            name={ensName}
+            editing={editing}
+            onDirtyStateChange={(dirty) => (hasUnsaved.current = dirty)}
+          />
         </section>
       </main>
     </>
