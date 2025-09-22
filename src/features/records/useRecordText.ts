@@ -14,6 +14,7 @@ import type { RecordKey } from "./constants";
 import { normalizeValueForKey, validateValueForKey } from "./validators";
 import { setTextAbi, textVerifierAbi } from "./abi";
 import { CONTRACTS } from "../../config/contracts";
+import { VERIFY_COMMAND_ENDPOINT } from "../../config/env";
 
 export function useRecordText(name: string, key: RecordKey) {
   const { chainId } = useAccount();
@@ -94,6 +95,69 @@ export function useRecordText(name: string, key: RecordKey) {
     }
   }, [isSuccess, refetch, queryClient]);
 
+  // Email verification request and polling
+  const [verifyRequested, setVerifyRequested] = useState(false);
+  const [verifyRequesting, setVerifyRequesting] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const { refetch: refetchVerification } = useReadContract({
+    address: CONTRACTS.sepolia.textVerifier,
+    abi: textVerifierAbi,
+    functionName: "verifyTextRecord",
+    args: [node, "email", data ?? ""],
+    chainId: sepolia.id,
+    query: { enabled: false },
+  });
+
+  useEffect(() => {
+    if (!verifyRequested || isVerified) return;
+    let stopped = false;
+    const interval = setInterval(async () => {
+      if (stopped) return;
+      try {
+        await refetchVerification();
+      } catch {
+        // ignore transient errors
+      }
+    }, 5000);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [verifyRequested, isVerified, refetchVerification]);
+
+  const requestVerification = async () => {
+    if (!isEmail) return;
+    const emailToVerify = originalValue;
+    if (!emailToVerify) {
+      setVerifyError("Enter an email first");
+      return;
+    }
+    setVerifyError(null);
+    setVerifyRequesting(true);
+    try {
+      const res = await fetch(VERIFY_COMMAND_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: emailToVerify,
+          command: `Link my email to ${name}`,
+          verifier: CONTRACTS.sepolia.textVerifier,
+        }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Request failed");
+      }
+      setVerifyRequested(true);
+    } catch (err) {
+      setVerifyError(
+        err instanceof Error ? err.message : "Verification failed"
+      );
+    } finally {
+      setVerifyRequesting(false);
+    }
+  };
+
   return {
     value,
     originalValue,
@@ -108,6 +172,10 @@ export function useRecordText(name: string, key: RecordKey) {
     justSaved,
     validationError,
     isEmail,
+    verifyRequested,
+    verifyRequesting,
+    verifyError,
+    requestVerification,
     onChange,
     save,
     resetDraft,

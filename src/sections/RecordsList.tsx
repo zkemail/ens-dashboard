@@ -10,6 +10,7 @@ import React, {
 import { COMMON_KEYS, type RecordKey } from "../features/records/constants";
 import { labelForKey } from "../features/records/validators";
 import { useRecordText } from "../features/records/useRecordText";
+import { Modal } from "../components/Modal";
 
 export function RecordsList({
   name,
@@ -146,7 +147,6 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
       value,
       originalValue,
       isLoading,
-      isVerifying,
       isVerified,
       isPending,
       isConfirming,
@@ -155,11 +155,15 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
       justSaved,
       validationError,
       isEmail,
+      verifyRequested,
+      verifyRequesting,
+      verifyError,
+      requestVerification,
       onChange,
       save,
       resetDraft,
     } = useRecordText(name, textKey);
-    const [showVerifyInfo, setShowVerifyInfo] = useState(false);
+    const [openVerifyModal, setOpenVerifyModal] = useState(false);
 
     const label = labelForKey(textKey);
 
@@ -241,63 +245,21 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                   </div>
                 ) : null}
               </div>
-              {isEmail && value ? (
-                <div
-                  className="help-text"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    marginTop: 4,
-                  }}
-                >
-                  {isVerifying ? (
-                    <span
-                      className="badge pending"
-                      title="Checking verification on Sepolia"
-                      aria-label="Verifying email link"
+              {isEmail && value && !isVerified ? (
+                <div className="record-input-row" style={{ marginTop: 4 }}>
+                  <span
+                    className="warning-inline"
+                    style={{ alignSelf: "center" }}
+                  >
+                    <span className="dot" aria-hidden />
+                    <span>Email not verified.</span>
+                    <button
+                      className="link-cta"
+                      onClick={() => setOpenVerifyModal(true)}
                     >
-                      ⏳ Verifying
-                    </span>
-                  ) : (
-                    <span
-                      className="badge"
-                      role="img"
-                      aria-label={
-                        isVerified ? "Verified email" : "Unverified email"
-                      }
-                      title={
-                        isVerified
-                          ? "Verified: The verifier contract on Sepolia confirms this ENS name ↔ email."
-                          : "Unverified: The verifier contract did not confirm a link for this email."
-                      }
-                      tabIndex={0}
-                      onMouseEnter={() => setShowVerifyInfo(true)}
-                      onMouseLeave={() => setShowVerifyInfo(false)}
-                      onFocus={() => setShowVerifyInfo(true)}
-                      onBlur={() => setShowVerifyInfo(false)}
-                      onClick={() => setShowVerifyInfo((v) => !v)}
-                      style={{
-                        background: isVerified
-                          ? "rgba(22, 163, 74, 0.12)"
-                          : "rgba(239, 68, 68, 0.12)",
-                        borderColor: isVerified
-                          ? "rgba(22, 163, 74, 0.3)"
-                          : "rgba(239, 68, 68, 0.3)",
-                        color: isVerified ? "#16a34a" : "#ef4444",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {isVerified ? "✅ Verified" : "❌ Unverified"}
-                    </span>
-                  )}
-                  {showVerifyInfo ? (
-                    <span>
-                      {isVerified
-                        ? "This email is verified by the Text Records Verifier on Sepolia."
-                        : "This email is not verified by the Text Records Verifier on Sepolia."}
-                    </span>
-                  ) : null}
+                      Click here to verify
+                    </button>
+                  </span>
                 </div>
               ) : null}
             </>
@@ -305,60 +267,61 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
             <div className="record-value">
               {renderValue(textKey, viewValue)}
               {isEmail && viewValue ? (
-                isVerifying ? (
-                  <span
-                    className="badge pending"
-                    title="Checking verification on Sepolia"
-                    aria-label="Verifying email link"
-                    style={{ marginLeft: 8 }}
-                  >
-                    ⏳ Verifying
-                  </span>
-                ) : (
-                  <>
-                    <span
-                      className="badge"
-                      role="img"
-                      aria-label={
-                        isVerified ? "Verified email" : "Unverified email"
-                      }
-                      title={
-                        isVerified
-                          ? "Verified: The verifier contract on Sepolia confirms this ENS name ↔ email."
-                          : "Unverified: The verifier contract did not confirm a link for this email."
-                      }
-                      tabIndex={0}
-                      onMouseEnter={() => setShowVerifyInfo(true)}
-                      onMouseLeave={() => setShowVerifyInfo(false)}
-                      onFocus={() => setShowVerifyInfo(true)}
-                      onBlur={() => setShowVerifyInfo(false)}
-                      onClick={() => setShowVerifyInfo((v) => !v)}
-                      style={{
-                        marginLeft: 8,
-                        background: isVerified
-                          ? "rgba(22, 163, 74, 0.12)"
-                          : "rgba(239, 68, 68, 0.12)",
-                        borderColor: isVerified
-                          ? "rgba(22, 163, 74, 0.3)"
-                          : "rgba(239, 68, 68, 0.3)",
-                        color: isVerified ? "#16a34a" : "#ef4444",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {isVerified ? "✅ Verified" : "❌ Unverified"}
-                    </span>
-                    {showVerifyInfo ? (
-                      <span className="help-text" style={{ marginLeft: 8 }}>
-                        {isVerified
-                          ? "This email is verified by the Text Records Verifier on Sepolia."
-                          : "This email is not verified by the Text Records Verifier on Sepolia."}
-                      </span>
-                    ) : null}
-                  </>
-                )
+                <span
+                  className="help-text"
+                  style={{
+                    marginLeft: 8,
+                    color: isVerified ? "#16a34a" : "#ef4444",
+                  }}
+                >
+                  {isVerified ? "Verified" : "Not verified"}
+                </span>
               ) : null}
             </div>
           )}
+          <Modal
+            open={openVerifyModal}
+            onClose={() => setOpenVerifyModal(false)}
+            title="Verify your email"
+            footer={
+              <>
+                <button
+                  className="link-cta"
+                  onClick={() => setOpenVerifyModal(false)}
+                >
+                  Close
+                </button>
+                <button
+                  className="nav-cta"
+                  onClick={requestVerification}
+                  disabled={verifyRequesting}
+                >
+                  {verifyRequesting
+                    ? "Sending…"
+                    : verifyRequested
+                    ? "Resend"
+                    : "Send verification"}
+                </button>
+              </>
+            }
+          >
+            <p>
+              We’ll send an email to the address you entered. Reply to that
+              email with the word
+              <strong> confirm</strong>. Our backend will verify and update
+              on-chain. Once done, you’ll see this email marked as verified.
+            </p>
+            {verifyRequested && !isVerified ? (
+              <p className="help-text">
+                Email sent. Waiting for your confirmation reply…
+              </p>
+            ) : null}
+            {verifyError ? (
+              <p className="help-text error" role="alert">
+                {verifyError}
+              </p>
+            ) : null}
+          </Modal>
         </div>
       </li>
     );
@@ -447,3 +410,6 @@ function renderValue(key: RecordKey, value: string) {
       return <span style={textStyle}>{value}</span>;
   }
 }
+
+// Modal rendering outside the component body is not possible; include within list item
+// but defined here for clarity in diffs.
