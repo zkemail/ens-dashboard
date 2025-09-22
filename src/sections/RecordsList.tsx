@@ -108,9 +108,13 @@ export function RecordsList({
     if (!hasChanges || savingAll) return;
     setSavingAll(true);
     try {
-      const tasks = COMMON_KEYS.map((k) =>
-        itemHandles.current[k]?.saveIfDirty()
-      );
+      const tasks = COMMON_KEYS.map((k) => {
+        const inst = itemHandles.current[k];
+        if (!inst) return Promise.resolve(false);
+        if (inst.isSaving()) return Promise.resolve(false);
+        if (!inst.hasChanges()) return Promise.resolve(false);
+        return inst.saveIfDirty();
+      });
       const results = await Promise.all(tasks);
       // filter out undefined and unsuccessful saves
       const anySaved = (results || []).some((r) => r === true);
@@ -123,8 +127,18 @@ export function RecordsList({
   };
 
   const onRevertAll = () => {
-    COMMON_KEYS.forEach((k) => itemHandles.current[k]?.resetDraft());
-    setDirtyKeys(new Set());
+    const nextDirty = new Set<RecordKey>();
+    COMMON_KEYS.forEach((k) => {
+      const inst = itemHandles.current[k];
+      if (!inst) return;
+      if (inst.isSaving()) {
+        if (inst.hasChanges()) nextDirty.add(k);
+        return;
+      }
+      inst.resetDraft();
+      if (inst.hasChanges()) nextDirty.add(k);
+    });
+    setDirtyKeys(nextDirty);
   };
 
   return (
@@ -177,6 +191,7 @@ type RecordItemHandle = {
   saveIfDirty: () => Promise<boolean>;
   resetDraft: () => void;
   hasChanges: () => boolean;
+  isSaving: () => boolean;
 };
 
 type RecordItemProps = {
@@ -208,6 +223,7 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
     const queryClient = useQueryClient();
     const [justSaved, setJustSaved] = useState(false);
     const [validationError, setValidationError] = useState<string | null>(null);
+    const [showVerifyInfo, setShowVerifyInfo] = useState(false);
 
     const value = draft ?? data ?? "";
     const disabled = !resolver || !chainId;
@@ -277,7 +293,7 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
 
     useImperativeHandle(ref, () => ({
       async saveIfDirty() {
-        if (isUnchanged) return false;
+        if (isUnchanged || isPending || isConfirming) return false;
         await onSave();
         return true;
       },
@@ -287,6 +303,9 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
       },
       hasChanges() {
         return !isUnchanged;
+      },
+      isSaving() {
+        return Boolean(isPending || isConfirming);
       },
     }));
 
@@ -300,92 +319,172 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
           <div className="record-label">{label}</div>
 
           {editing ? (
-            <div className="record-input-row">
-              {textKey === "description" ? (
-                <textarea
-                  value={value}
-                  onChange={(e) => {
-                    setValidationError(null);
-                    setDraft(e.target.value);
-                  }}
-                  placeholder={
-                    isLoading ? "Loading…" : placeholderForKey(textKey)
-                  }
-                  className="textarea"
-                  rows={3}
-                  disabled={isLoading}
-                />
-              ) : (
-                <input
-                  value={value}
-                  onChange={(e) => {
-                    setValidationError(null);
-                    setDraft(e.target.value);
-                  }}
-                  placeholder={
-                    isLoading ? "Loading…" : placeholderForKey(textKey)
-                  }
-                  className="input"
-                  disabled={isLoading}
-                />
-              )}
-              {isEmail && data ? (
-                isVerifying ? (
-                  <span className="subtitle" style={{ whiteSpace: "nowrap" }}>
-                    Verifying…
-                  </span>
-                ) : (
-                  <span
-                    className="subtitle"
-                    style={{
-                      color: isVerified ? "#16a34a" : "#ef4444",
-                      whiteSpace: "nowrap",
+            <>
+              <div className="record-input-row">
+                {textKey === "description" ? (
+                  <textarea
+                    value={value}
+                    onChange={(e) => {
+                      setValidationError(null);
+                      setDraft(e.target.value);
                     }}
+                    placeholder={
+                      isLoading ? "Loading…" : placeholderForKey(textKey)
+                    }
+                    className="textarea"
+                    rows={3}
+                    disabled={isLoading}
+                  />
+                ) : (
+                  <input
+                    value={value}
+                    onChange={(e) => {
+                      setValidationError(null);
+                      setDraft(e.target.value);
+                    }}
+                    placeholder={
+                      isLoading ? "Loading…" : placeholderForKey(textKey)
+                    }
+                    className="input"
+                    disabled={isLoading}
+                  />
+                )}
+                {!isUnchanged && !validationError ? (
+                  <span className="dot" title="Unsaved changes" />
+                ) : null}
+                {!isUnchanged ? (
+                  <button
+                    className="link-cta"
+                    onClick={onSave}
+                    disabled={isSaveDisabled}
                   >
-                    {isVerified ? "Verified" : "Unverified"}
-                  </span>
-                )
-              ) : null}
-              {!isUnchanged && !validationError ? (
-                <span className="dot" title="Unsaved changes" />
-              ) : null}
-              {!isUnchanged ? (
-                <button
-                  className="link-cta"
-                  onClick={onSave}
-                  disabled={isSaveDisabled}
+                    {isPending || isConfirming
+                      ? "Saving…"
+                      : justSaved
+                      ? "Saved"
+                      : "Save"}
+                  </button>
+                ) : null}
+                {validationError ? (
+                  <div className="help-text error" role="alert">
+                    {validationError}
+                  </div>
+                ) : null}
+              </div>
+              {isEmail && value ? (
+                <div
+                  className="help-text"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 4,
+                  }}
                 >
-                  {isPending || isConfirming
-                    ? "Saving…"
-                    : justSaved
-                    ? "Saved"
-                    : "Save"}
-                </button>
-              ) : null}
-              {validationError ? (
-                <div className="help-text error" role="alert">
-                  {validationError}
+                  {isVerifying ? (
+                    <span
+                      className="badge pending"
+                      title="Checking verification on Sepolia"
+                      aria-label="Verifying email link"
+                    >
+                      ⏳ Verifying
+                    </span>
+                  ) : (
+                    <span
+                      className="badge"
+                      role="img"
+                      aria-label={
+                        isVerified ? "Verified email" : "Unverified email"
+                      }
+                      title={
+                        isVerified
+                          ? "Verified: The verifier contract on Sepolia confirms this ENS name ↔ email."
+                          : "Unverified: The verifier contract did not confirm a link for this email."
+                      }
+                      tabIndex={0}
+                      onMouseEnter={() => setShowVerifyInfo(true)}
+                      onMouseLeave={() => setShowVerifyInfo(false)}
+                      onFocus={() => setShowVerifyInfo(true)}
+                      onBlur={() => setShowVerifyInfo(false)}
+                      onClick={() => setShowVerifyInfo((v) => !v)}
+                      style={{
+                        background: isVerified
+                          ? "rgba(22, 163, 74, 0.12)"
+                          : "rgba(239, 68, 68, 0.12)",
+                        borderColor: isVerified
+                          ? "rgba(22, 163, 74, 0.3)"
+                          : "rgba(239, 68, 68, 0.3)",
+                        color: isVerified ? "#16a34a" : "#ef4444",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {isVerified ? "✅ Verified" : "❌ Unverified"}
+                    </span>
+                  )}
+                  {showVerifyInfo ? (
+                    <span>
+                      {isVerified
+                        ? "This email is verified by the Text Records Verifier on Sepolia."
+                        : "This email is not verified by the Text Records Verifier on Sepolia."}
+                    </span>
+                  ) : null}
                 </div>
               ) : null}
-            </div>
+            </>
           ) : (
             <div className="record-value">
               {renderValue(textKey, viewValue)}
               {isEmail && viewValue ? (
                 isVerifying ? (
-                  <span className="subtitle" style={{ marginLeft: 8 }}>
-                    Verifying…
+                  <span
+                    className="badge pending"
+                    title="Checking verification on Sepolia"
+                    aria-label="Verifying email link"
+                    style={{ marginLeft: 8 }}
+                  >
+                    ⏳ Verifying
                   </span>
                 ) : (
-                  <span
-                    className="subtitle"
-                    style={{
-                      marginLeft: 8,
-                      color: isVerified ? "#16a34a" : "#ef4444",
-                    }}
-                  >
-                    {isVerified ? "Verified" : "Unverified"}
-                  </span>
+                  <>
+                    <span
+                      className="badge"
+                      role="img"
+                      aria-label={
+                        isVerified ? "Verified email" : "Unverified email"
+                      }
+                      title={
+                        isVerified
+                          ? "Verified: The verifier contract on Sepolia confirms this ENS name ↔ email."
+                          : "Unverified: The verifier contract did not confirm a link for this email."
+                      }
+                      tabIndex={0}
+                      onMouseEnter={() => setShowVerifyInfo(true)}
+                      onMouseLeave={() => setShowVerifyInfo(false)}
+                      onFocus={() => setShowVerifyInfo(true)}
+                      onBlur={() => setShowVerifyInfo(false)}
+                      onClick={() => setShowVerifyInfo((v) => !v)}
+                      style={{
+                        marginLeft: 8,
+                        background: isVerified
+                          ? "rgba(22, 163, 74, 0.12)"
+                          : "rgba(239, 68, 68, 0.12)",
+                        borderColor: isVerified
+                          ? "rgba(22, 163, 74, 0.3)"
+                          : "rgba(239, 68, 68, 0.3)",
+                        color: isVerified ? "#16a34a" : "#ef4444",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {isVerified ? "✅ Verified" : "❌ Unverified"}
+                    </span>
+                    {showVerifyInfo ? (
+                      <span className="help-text" style={{ marginLeft: 8 }}>
+                        {isVerified
+                          ? "This email is verified by the Text Records Verifier on Sepolia."
+                          : "This email is not verified by the Text Records Verifier on Sepolia."}
+                      </span>
+                    ) : null}
+                  </>
                 )
               ) : null}
             </div>
