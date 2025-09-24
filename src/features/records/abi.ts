@@ -4,6 +4,6 @@ export const setTextAbi = parseAbi([
   "function setText(bytes32 node,string key,string value)",
 ]);
 
-export const textVerifierAbi = parseAbi([
+export const verifyTextRecordAbi = parseAbi([
   "function verifyTextRecord(bytes32 node,string key,string value) view returns (bool)",
 ]);

@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { RecordKey } from "./constants";
 import { normalizeValueForKey, validateValueForKey } from "./validators";
-import { setTextAbi, textVerifierAbi } from "./abi";
+import { setTextAbi, verifyTextRecordAbi } from "./abi";
 import { CONTRACTS } from "../../config/contracts";
 import { VERIFY_COMMAND_ENDPOINT } from "../../config/env";
 
@@ -37,15 +37,21 @@ export function useRecordText(name: string, key: RecordKey) {
   const [justSaved, setJustSaved] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const isEmail = key === "email";
+  const isVerifiable = ["email", "com.twitter"].includes(key);
+
   const node = useMemo(() => namehash(name), [name]);
   const { data: verifiedData, isLoading: isVerifying } = useReadContract({
-    address: CONTRACTS.sepolia.textVerifier,
-    abi: textVerifierAbi,
+    address:
+      key === "email"
+        ? CONTRACTS.sepolia.linkEmailVerifier
+        : key === "com.twitter"
+        ? CONTRACTS.sepolia.linkXHandleVerifier
+        : undefined,
+    abi: verifyTextRecordAbi,
     functionName: "verifyTextRecord",
-    args: [node, "email", data ?? ""],
+    args: [node, key, data ?? ""],
     chainId: sepolia.id,
-    query: { enabled: isEmail && Boolean(data && data.length > 0) },
+    query: { enabled: isVerifiable && Boolean(data && data.length > 0) },
   });
   const isVerified = verifiedData === true;
 
@@ -100,10 +106,15 @@ export function useRecordText(name: string, key: RecordKey) {
   const [verifyRequesting, setVerifyRequesting] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const { refetch: refetchVerification } = useReadContract({
-    address: CONTRACTS.sepolia.textVerifier,
-    abi: textVerifierAbi,
+    address:
+      key === "email"
+        ? CONTRACTS.sepolia.linkEmailVerifier
+        : key === "com.twitter"
+        ? CONTRACTS.sepolia.linkXHandleVerifier
+        : undefined,
+    abi: verifyTextRecordAbi,
     functionName: "verifyTextRecord",
-    args: [node, "email", data ?? ""],
+    args: [node, key, data ?? ""],
     chainId: sepolia.id,
     query: { enabled: false },
   });
@@ -126,7 +137,7 @@ export function useRecordText(name: string, key: RecordKey) {
   }, [verifyRequested, isVerified, refetchVerification]);
 
   const requestVerification = async () => {
-    if (!isEmail) return;
+    if (!isVerifiable) return;
     const emailToVerify = originalValue;
     if (!emailToVerify) {
       setVerifyError("Enter an email first");
@@ -141,7 +152,7 @@ export function useRecordText(name: string, key: RecordKey) {
         body: JSON.stringify({
           email: emailToVerify,
           command: `Link my email to ${name}`,
-          verifier: CONTRACTS.sepolia.textVerifier,
+          verifier: CONTRACTS.sepolia.linkEmailVerifier,
         }),
       });
       if (!res.ok) {
@@ -171,7 +182,7 @@ export function useRecordText(name: string, key: RecordKey) {
     disabled,
     justSaved,
     validationError,
-    isEmail,
+    isVerifiable,
     verifyRequested,
     verifyRequesting,
     verifyError,

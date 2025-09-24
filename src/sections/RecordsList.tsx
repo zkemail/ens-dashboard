@@ -155,7 +155,7 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
       isUnchanged,
       justSaved,
       validationError,
-      isEmail,
+      isVerifiable,
       verifyRequested,
       verifyRequesting,
       verifyError,
@@ -247,7 +247,7 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                   </div>
                 ) : null}
               </div>
-              {isEmail && value && !isVerified ? (
+              {isVerifiable && value && !isVerified ? (
                 <div className="record-input-row" style={{ marginTop: 4 }}>
                   <span
                     className="warning-inline"
@@ -288,7 +288,7 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
           ) : (
             <div className="record-value">
               {renderValue(textKey, viewValue)}
-              {isEmail && viewValue ? (
+              {isVerifiable && viewValue ? (
                 <span
                   className="help-text"
                   style={{
