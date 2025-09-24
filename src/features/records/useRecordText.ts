@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { RecordKey } from "./constants";
 import { normalizeValueForKey, validateValueForKey } from "./validators";
-import { setTextAbi, verifyTextRecordAbi } from "./abi";
+import { setTextAbi, textRecordVerifierAbi } from "./abi";
 import { CONTRACTS } from "../../config/contracts";
 import { VERIFY_COMMAND_ENDPOINT } from "../../config/env";
 
@@ -47,7 +47,7 @@ export function useRecordText(name: string, key: RecordKey) {
         : key === "com.twitter"
         ? CONTRACTS.sepolia.linkXHandleVerifier
         : undefined,
-    abi: verifyTextRecordAbi,
+    abi: textRecordVerifierAbi,
     functionName: "verifyTextRecord",
     args: [node, key, data ?? ""],
     chainId: sepolia.id,
@@ -112,7 +112,7 @@ export function useRecordText(name: string, key: RecordKey) {
         : key === "com.twitter"
         ? CONTRACTS.sepolia.linkXHandleVerifier
         : undefined,
-    abi: verifyTextRecordAbi,
+    abi: textRecordVerifierAbi,
     functionName: "verifyTextRecord",
     args: [node, key, data ?? ""],
     chainId: sepolia.id,

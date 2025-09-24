@@ -1,5 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { Buffer as BufferPolyfill } from "buffer";
+import { useReadContract, useWriteContract } from "wagmi";
+import { entrypointAbi } from "../records/abi";
+import { CONTRACTS } from "../../config/contracts";
 
 // Browser polyfills for libs expecting Node-like globals
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,6 +35,7 @@ export function useTwitterProof() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ProofResult | null>(null);
   const [step, setStep] = useState<string>("");
+  const { writeContractAsync } = useWriteContract();
 
   const run = useCallback(
     async (emlFile: File, command: string) => {
@@ -72,8 +76,22 @@ export function useTwitterProof() {
         });
         setStep("offchain-verification");
         const verification = await blueprint.verifyProof(proof, { noirWasm });
-
-        // For now, only return the proof per requirements; skip on-chain submit and verification
+        setStep("onchain-submit");
+        const proofData = `0x${proof.props.proofData!}` as `0x${string}`;
+        const publicOutputs = proof.props.publicOutputs! as `0x${string}`[];
+        const { data: encoded } = useReadContract({
+          address: CONTRACTS.sepolia.linkXHandleVerifier,
+          abi: entrypointAbi,
+          functionName: "encode",
+          args: [proofData, publicOutputs],
+        });
+        if (!encoded) throw new Error("Failed to encode proof");
+        writeContractAsync({
+          abi: entrypointAbi,
+          address: CONTRACTS.sepolia.linkXHandleVerifier,
+          functionName: "entrypoint",
+          args: [encoded],
+        });
         setResult({ proof, verification });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
