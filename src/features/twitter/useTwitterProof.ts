@@ -76,22 +76,25 @@ export function useTwitterProof() {
         });
         setStep("offchain-verification");
         const verification = await blueprint.verifyProof(proof, { noirWasm });
-        setStep("onchain-submit");
-        const proofData = `0x${proof.props.proofData!}` as `0x${string}`;
-        const publicOutputs = proof.props.publicOutputs! as `0x${string}`[];
-        const { data: encoded } = useReadContract({
-          address: CONTRACTS.sepolia.linkXHandleVerifier,
-          abi: entrypointAbi,
-          functionName: "encode",
-          args: [proofData, publicOutputs],
-        });
-        if (!encoded) throw new Error("Failed to encode proof");
-        writeContractAsync({
-          abi: entrypointAbi,
-          address: CONTRACTS.sepolia.linkXHandleVerifier,
-          functionName: "entrypoint",
-          args: [encoded],
-        });
+
+        // TODO: uncomment this when the onchain submission is ready
+        // setStep("onchain-submit");
+        // const proofData = `0x${proof.props.proofData!}` as `0x${string}`;
+        // const publicOutputs = proof.props.publicOutputs! as `0x${string}`[];
+        // const { data: encoded } = useReadContract({
+        //   address: CONTRACTS.sepolia.linkXHandleVerifier,
+        //   abi: entrypointAbi,
+        //   functionName: "encode",
+        //   args: [proofData, publicOutputs],
+        // });
+        // if (!encoded) throw new Error("Failed to encode proof");
+        // writeContractAsync({
+        //   abi: entrypointAbi,
+        //   address: CONTRACTS.sepolia.linkXHandleVerifier,
+        //   functionName: "entrypoint",
+        //   args: [encoded],
+        // });
+
         setResult({ proof, verification });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
