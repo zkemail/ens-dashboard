@@ -6,10 +6,12 @@ export function TwitterProofModal({
   open,
   onClose,
   ensName,
+  onSubmitted,
 }: {
   open: boolean;
   onClose: () => void;
   ensName?: string;
+  onSubmitted?: () => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -84,6 +86,11 @@ export function TwitterProofModal({
     setIsDragOver(false);
     onClose();
   };
+
+  // Notify parent when a submission completes
+  useEffect(() => {
+    if (hasSubmitted) onSubmitted?.();
+  }, [hasSubmitted, onSubmitted]);
 
   return (
     <Modal
@@ -215,7 +222,8 @@ export function TwitterProofModal({
         ) : null}
         {hasSubmitted ? (
           <div className="help-text" role="status">
-            Submitted. You can close this dialog.
+            Transaction submitted. Once it’s verified on-chain, your profile
+            will show Verified after a refresh. No further action is needed.
           </div>
         ) : null}
       </div>
