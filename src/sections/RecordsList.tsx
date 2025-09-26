@@ -237,8 +237,8 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                     {isPending || isConfirming
                       ? "Saving…"
                       : justSaved
-                      ? "Saved"
-                      : "Save"}
+                        ? "Saved"
+                        : "Save"}
                   </button>
                 ) : null}
                 {validationError ? (
@@ -247,7 +247,7 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                   </div>
                 ) : null}
               </div>
-              {isVerifiable && value && !isVerified ? (
+              {textKey === "email" && isVerifiable && value && !isVerified ? (
                 <div className="record-input-row" style={{ marginTop: 4 }}>
                   <span
                     className="warning-inline"
@@ -264,17 +264,17 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                   </span>
                 </div>
               ) : null}
-              {textKey === "com.twitter" ? (
+              {textKey === "com.twitter" &&
+              isVerifiable &&
+              value &&
+              !isVerified ? (
                 <div className="record-input-row" style={{ marginTop: 4 }}>
                   <span
                     className="warning-inline"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      whiteSpace: "nowrap",
-                    }}
+                    style={{ alignSelf: "center" }}
                   >
+                    <span className="dot" aria-hidden />
+                    <span>Twitter not verified.</span>
                     <button
                       className="link-cta"
                       onClick={() => setOpenTwitterProof(true)}
@@ -321,8 +321,8 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                   {verifyRequesting
                     ? "Sending…"
                     : verifyRequested
-                    ? "Resend"
-                    : "Send verification"}
+                      ? "Resend"
+                      : "Send verification"}
                 </button>
               </>
             }

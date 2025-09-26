@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Buffer as BufferPolyfill } from "buffer";
-import { useReadContract, useWriteContract } from "wagmi";
+import { usePublicClient, useWriteContract } from "wagmi";
+import { useQueryClient } from "@tanstack/react-query";
 import { entrypointAbi } from "../records/abi";
 import { CONTRACTS } from "../../config/contracts";
 
@@ -36,6 +37,8 @@ export function useTwitterProof() {
   const [result, setResult] = useState<ProofResult | null>(null);
   const [step, setStep] = useState<string>("");
   const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
+  const queryClient = useQueryClient();
 
   const run = useCallback(
     async (emlFile: File, command: string) => {
@@ -83,22 +86,27 @@ export function useTwitterProof() {
         const verification = await blueprint.verifyProof(proof, { noirWasm });
 
         // TODO: uncomment this when the onchain submission is ready
-        // setStep("onchain-submit");
-        // const proofData = `0x${proof.props.proofData!}` as `0x${string}`;
-        // const publicOutputs = proof.props.publicOutputs! as `0x${string}`[];
-        // const { data: encoded } = useReadContract({
-        //   address: CONTRACTS.sepolia.linkXHandleVerifier,
-        //   abi: entrypointAbi,
-        //   functionName: "encode",
-        //   args: [proofData, publicOutputs],
-        // });
-        // if (!encoded) throw new Error("Failed to encode proof");
-        // writeContractAsync({
-        //   abi: entrypointAbi,
-        //   address: CONTRACTS.sepolia.linkXHandleVerifier,
-        //   functionName: "entrypoint",
-        //   args: [encoded],
-        // });
+        setStep("onchain-submit");
+        const proofData = `0x${proof.props.proofData!}` as `0x${string}`;
+        const publicOutputs = proof.props.publicOutputs! as `0x${string}`[];
+        if (!publicClient) throw new Error("Public client unavailable");
+        const encoded = await publicClient.readContract({
+          address: CONTRACTS.sepolia.linkXHandleVerifier,
+          abi: entrypointAbi,
+          functionName: "encode",
+          args: [proofData, publicOutputs],
+        });
+        const txHash = await writeContractAsync({
+          abi: entrypointAbi,
+          address: CONTRACTS.sepolia.linkXHandleVerifier,
+          functionName: "entrypoint",
+          args: [encoded],
+        });
+
+        setStep("wait-confirmation");
+        await publicClient.waitForTransactionReceipt({ hash: txHash });
+        // Refresh queries that show verification status
+        await queryClient.invalidateQueries();
 
         setResult({ proof, verification });
       } catch (e) {
@@ -109,7 +117,7 @@ export function useTwitterProof() {
         setIsLoading(false);
       }
     },
-    [step]
+    [step, publicClient, writeContractAsync, queryClient]
   );
 
   const json = useMemo(
