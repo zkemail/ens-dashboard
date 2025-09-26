@@ -247,41 +247,58 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                   </div>
                 ) : null}
               </div>
-              {textKey === "email" && isVerifiable && value && !isVerified ? (
+              {textKey === "email" && isVerifiable && value ? (
                 <div className="record-input-row" style={{ marginTop: 4 }}>
-                  <span
-                    className="warning-inline"
-                    style={{ alignSelf: "center" }}
-                  >
-                    <span className="dot" aria-hidden />
-                    <span>Email not verified.</span>
-                    <button
-                      className="link-cta"
-                      onClick={() => setOpenVerifyModal(true)}
+                  {isVerified ? (
+                    <span
+                      className="success-inline"
+                      style={{ alignSelf: "center" }}
                     >
-                      Click here to verify
-                    </button>
-                  </span>
+                      <span className="dot" aria-hidden />
+                      <span>Verified.</span>
+                    </span>
+                  ) : (
+                    <span
+                      className="warning-inline"
+                      style={{ alignSelf: "center" }}
+                    >
+                      <span className="dot" aria-hidden />
+                      <span>Email not verified.</span>
+                      <button
+                        className="link-cta"
+                        onClick={() => setOpenVerifyModal(true)}
+                      >
+                        Click here to verify
+                      </button>
+                    </span>
+                  )}
                 </div>
               ) : null}
-              {textKey === "com.twitter" &&
-              isVerifiable &&
-              value &&
-              !isVerified ? (
+              {textKey === "com.twitter" && isVerifiable && value ? (
                 <div className="record-input-row" style={{ marginTop: 4 }}>
-                  <span
-                    className="warning-inline"
-                    style={{ alignSelf: "center" }}
-                  >
-                    <span className="dot" aria-hidden />
-                    <span>X handle not verified.</span>
-                    <button
-                      className="link-cta"
-                      onClick={() => setOpenTwitterProof(true)}
+                  {isVerified ? (
+                    <span
+                      className="success-inline"
+                      style={{ alignSelf: "center" }}
                     >
-                      Click here to verify
-                    </button>
-                  </span>
+                      <span className="dot" aria-hidden />
+                      <span>Verified.</span>
+                    </span>
+                  ) : (
+                    <span
+                      className="warning-inline"
+                      style={{ alignSelf: "center" }}
+                    >
+                      <span className="dot" aria-hidden />
+                      <span>X handle not verified.</span>
+                      <button
+                        className="link-cta"
+                        onClick={() => setOpenTwitterProof(true)}
+                      >
+                        Click here to verify
+                      </button>
+                    </span>
+                  )}
                 </div>
               ) : null}
             </>

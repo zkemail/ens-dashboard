@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Buffer as BufferPolyfill } from "buffer";
 import { usePublicClient, useWriteContract } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
@@ -141,6 +141,20 @@ export function useTwitterProof() {
     () => (result ? JSON.stringify(result, null, 2) : ""),
     [result]
   );
+
+  // After submit, poll to refresh verification status so UI updates without reload
+  useEffect(() => {
+    if (!hasSubmitted) return;
+    let stopped = false;
+    const interval = setInterval(() => {
+      if (stopped) return;
+      void queryClient.invalidateQueries();
+    }, 5000);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [hasSubmitted, queryClient]);
 
   const reset = useCallback(() => {
     setIsLoading(false);
