@@ -3,8 +3,8 @@
 export const CONTRACTS = {
   sepolia: {
     linkEmailVerifier:
-      "0x1e6786bCB1848d801c26b115af0f4c23F08B442c" as `0x${string}`,
+      "0x64da043037E77971C9Cea2C49a54F8A5872B8f1A" as `0x${string}`,
     linkXHandleVerifier:
-      "0x13AF3e033a33Cd96e40cd7ceeE496d25947DbfD7" as `0x${string}`,
+      "0x8cd219dEb66E9f7d20eB489EA464751F8F26Ea07" as `0x${string}`,
   },
 } as const;
