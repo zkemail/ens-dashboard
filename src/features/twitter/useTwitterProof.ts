@@ -33,8 +33,10 @@ type ProofResult = {
 
 export function useTwitterProof() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ProofResult | null>(null);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [step, setStep] = useState<string>("");
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
@@ -85,29 +87,7 @@ export function useTwitterProof() {
         setStep("offchain-verification");
         const verification = await blueprint.verifyProof(proof, { noirWasm });
 
-        // TODO: uncomment this when the onchain submission is ready
-        setStep("onchain-submit");
-        const proofData = `0x${proof.props.proofData!}` as `0x${string}`;
-        const publicOutputs = proof.props.publicOutputs! as `0x${string}`[];
-        if (!publicClient) throw new Error("Public client unavailable");
-        const encoded = await publicClient.readContract({
-          address: CONTRACTS.sepolia.linkXHandleVerifier,
-          abi: entrypointAbi,
-          functionName: "encode",
-          args: [proofData, publicOutputs],
-        });
-        const txHash = await writeContractAsync({
-          abi: entrypointAbi,
-          address: CONTRACTS.sepolia.linkXHandleVerifier,
-          functionName: "entrypoint",
-          args: [encoded],
-        });
-
-        setStep("wait-confirmation");
-        await publicClient.waitForTransactionReceipt({ hash: txHash });
-        // Refresh queries that show verification status
-        await queryClient.invalidateQueries();
-
+        // Do not submit onchain here; return result and allow a later submit action
         setResult({ proof, verification });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -117,13 +97,69 @@ export function useTwitterProof() {
         setIsLoading(false);
       }
     },
-    [step, publicClient, writeContractAsync, queryClient]
+    [step]
   );
+
+  const submit = useCallback(async () => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      if (!result) throw new Error("Generate a proof first");
+      if (!publicClient) throw new Error("Public client unavailable");
+      setStep("onchain-encode");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const proofAny: any = result.proof as any;
+      const proofData = `0x${proofAny.props.proofData!}` as `0x${string}`;
+      const publicOutputs = proofAny.props.publicOutputs! as `0x${string}`[];
+      const encoded = await publicClient.readContract({
+        address: CONTRACTS.sepolia.linkXHandleVerifier,
+        abi: entrypointAbi,
+        functionName: "encode",
+        args: [proofData, publicOutputs],
+      });
+      setStep("onchain-submit");
+      await writeContractAsync({
+        abi: entrypointAbi,
+        address: CONTRACTS.sepolia.linkXHandleVerifier,
+        functionName: "entrypoint",
+        args: [encoded],
+      });
+      // Mark as submitted immediately; do not wait for confirmations here
+      setHasSubmitted(true);
+      // Opportunistically refresh queries, but don't block UI
+      void queryClient.invalidateQueries();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("Twitter submit error at", step, e);
+      setError(step ? `${msg} (at ${step})` : msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [result, publicClient, writeContractAsync, queryClient, step]);
 
   const json = useMemo(
     () => (result ? JSON.stringify(result, null, 2) : ""),
     [result]
   );
 
-  return { isLoading, error, result, json, run } as const;
+  const reset = useCallback(() => {
+    setIsLoading(false);
+    setIsSubmitting(false);
+    setError(null);
+    setResult(null);
+    setHasSubmitted(false);
+    setStep("");
+  }, []);
+
+  return {
+    isLoading,
+    isSubmitting,
+    hasSubmitted,
+    error,
+    result,
+    json,
+    run,
+    submit,
+    reset,
+  } as const;
 }

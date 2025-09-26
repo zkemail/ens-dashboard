@@ -274,7 +274,7 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                     style={{ alignSelf: "center" }}
                   >
                     <span className="dot" aria-hidden />
-                    <span>Twitter not verified.</span>
+                    <span>X handle not verified.</span>
                     <button
                       className="link-cta"
                       onClick={() => setOpenTwitterProof(true)}

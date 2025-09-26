@@ -8,17 +8,20 @@ export function Modal({
   title,
   children,
   footer,
+  canClose = true,
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
   children?: ReactNode;
   footer?: ReactNode;
+  canClose?: boolean;
 }) {
   useEffect(() => {
     if (!open) return;
     document.body.classList.add("modal-open");
     const onKey = (e: KeyboardEvent) => {
+      if (!canClose) return;
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
@@ -26,7 +29,7 @@ export function Modal({
       document.body.classList.remove("modal-open");
       window.removeEventListener("keydown", onKey);
     };
-  }, [open, onClose]);
+  }, [open, onClose, canClose]);
 
   if (!open) return null;
 
@@ -35,6 +38,7 @@ export function Modal({
       className="modal-backdrop"
       role="presentation"
       onMouseDown={(e) => {
+        if (!canClose) return;
         if (e.target === e.currentTarget) onClose();
       }}
     >
@@ -51,7 +55,13 @@ export function Modal({
               {title}
             </h3>
           ) : null}
-          <button className="icon-btn" aria-label="Close" onClick={onClose}>
+          <button
+            className="icon-btn"
+            aria-label="Close"
+            onClick={() => canClose && onClose()}
+            aria-disabled={!canClose}
+            disabled={!canClose}
+          >
             ✕
           </button>
         </div>
