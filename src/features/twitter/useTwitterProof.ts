@@ -59,6 +59,11 @@ export function useTwitterProof() {
         });
         setStep("get-blueprint");
         const blueprint = await sdk.getBlueprint("benceharomi/X_HANDLE@v2");
+        // local noir circuit
+        blueprint.getNoirCircuit = async () => {
+          const data = await (await fetch("/x_handle_noir.json")).json();
+          return data;
+        };
         setStep("create-prover");
         const prover = blueprint.createProver({ isLocal: true });
 
