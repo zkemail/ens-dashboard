@@ -352,7 +352,9 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
             </p>
             {verifyRequested && !isVerified ? (
               <p className="help-text">
-                Email sent. Waiting for your confirmation reply…
+                Confirmation email sent. After you reply and it is confirmed
+                on-chain, your profile will show Verified after a refresh. No
+                further action is needed.
               </p>
             ) : null}
             {verifyError ? (
