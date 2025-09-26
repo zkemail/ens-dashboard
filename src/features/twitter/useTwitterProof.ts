@@ -1,5 +1,9 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Buffer as BufferPolyfill } from "buffer";
+import { usePublicClient, useWriteContract } from "wagmi";
+import { useQueryClient } from "@tanstack/react-query";
+import { entrypointAbi } from "../records/abi";
+import { CONTRACTS } from "../../config/contracts";
 
 // Browser polyfills for libs expecting Node-like globals
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,9 +33,14 @@ type ProofResult = {
 
 export function useTwitterProof() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ProofResult | null>(null);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [step, setStep] = useState<string>("");
+  const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
+  const queryClient = useQueryClient();
 
   const run = useCallback(
     async (emlFile: File, command: string) => {
@@ -55,6 +64,11 @@ export function useTwitterProof() {
         });
         setStep("get-blueprint");
         const blueprint = await sdk.getBlueprint("benceharomi/X_HANDLE@v2");
+        // local noir circuit
+        blueprint.getNoirCircuit = async () => {
+          const data = await (await fetch("/x_handle_noir.json")).json();
+          return data;
+        };
         setStep("create-prover");
         const prover = blueprint.createProver({ isLocal: true });
 
@@ -73,7 +87,7 @@ export function useTwitterProof() {
         setStep("offchain-verification");
         const verification = await blueprint.verifyProof(proof, { noirWasm });
 
-        // For now, only return the proof per requirements; skip on-chain submit and verification
+        // Do not submit onchain here; return result and allow a later submit action
         setResult({ proof, verification });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -86,10 +100,80 @@ export function useTwitterProof() {
     [step]
   );
 
+  const submit = useCallback(async () => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      if (!result) throw new Error("Generate a proof first");
+      if (!publicClient) throw new Error("Public client unavailable");
+      setStep("onchain-encode");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const proofAny: any = result.proof as any;
+      const proofData = `0x${proofAny.props.proofData!}` as `0x${string}`;
+      const publicOutputs = proofAny.props.publicOutputs! as `0x${string}`[];
+      const encoded = await publicClient.readContract({
+        address: CONTRACTS.sepolia.linkXHandleVerifier,
+        abi: entrypointAbi,
+        functionName: "encode",
+        args: [proofData, publicOutputs],
+      });
+      setStep("onchain-submit");
+      await writeContractAsync({
+        abi: entrypointAbi,
+        address: CONTRACTS.sepolia.linkXHandleVerifier,
+        functionName: "entrypoint",
+        args: [encoded],
+      });
+      // Mark as submitted immediately; do not wait for confirmations here
+      setHasSubmitted(true);
+      // Opportunistically refresh queries, but don't block UI
+      void queryClient.invalidateQueries();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("Twitter submit error at", step, e);
+      setError(step ? `${msg} (at ${step})` : msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [result, publicClient, writeContractAsync, queryClient, step]);
+
   const json = useMemo(
     () => (result ? JSON.stringify(result, null, 2) : ""),
     [result]
   );
 
-  return { isLoading, error, result, json, run } as const;
+  // After submit, poll to refresh verification status so UI updates without reload
+  useEffect(() => {
+    if (!hasSubmitted) return;
+    let stopped = false;
+    const interval = setInterval(() => {
+      if (stopped) return;
+      void queryClient.invalidateQueries();
+    }, 5000);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [hasSubmitted, queryClient]);
+
+  const reset = useCallback(() => {
+    setIsLoading(false);
+    setIsSubmitting(false);
+    setError(null);
+    setResult(null);
+    setHasSubmitted(false);
+    setStep("");
+  }, []);
+
+  return {
+    isLoading,
+    isSubmitting,
+    hasSubmitted,
+    error,
+    result,
+    json,
+    run,
+    submit,
+    reset,
+  } as const;
 }

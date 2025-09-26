@@ -53,7 +53,7 @@ export function validateValueForKey(
 export function labelForKey(key: RecordKey): string {
   switch (key) {
     case "com.twitter":
-      return "Twitter";
+      return "X";
     case "com.github":
       return "GitHub";
     case "org.telegram":

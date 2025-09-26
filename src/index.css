@@ -21,8 +21,17 @@ body,
 
 body {
   margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
-    Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    "Apple Color Emoji",
+    "Segoe UI Emoji";
   color: var(--text);
   background: var(--bg-start);
   -webkit-font-smoothing: antialiased;
@@ -38,11 +47,8 @@ html::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(
-      1200px 600px at 20% 0%,
-      var(--bg-end),
-      transparent 60%
-    ),
+  background:
+    radial-gradient(1200px 600px at 20% 0%, var(--bg-end), transparent 60%),
     radial-gradient(1200px 600px at 80% -10%, var(--bg-end), transparent 60%);
 }
 
@@ -143,6 +149,22 @@ button {
   background: #f59e0b;
 }
 
+/* Success inline status */
+.success-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #16a34a;
+  white-space: nowrap;
+}
+
+.success-inline .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --bg-start: #0b0f1a;
@@ -159,7 +181,8 @@ button {
     background: var(--bg-start);
   }
   html::before {
-    background: radial-gradient(
+    background:
+      radial-gradient(
         1200px 600px at 20% -10%,
         rgba(35, 48, 89, 0.35),
         transparent 60%

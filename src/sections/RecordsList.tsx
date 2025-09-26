@@ -155,7 +155,7 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
       isUnchanged,
       justSaved,
       validationError,
-      isEmail,
+      isVerifiable,
       verifyRequested,
       verifyRequesting,
       verifyError,
@@ -237,8 +237,8 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                     {isPending || isConfirming
                       ? "Saving…"
                       : justSaved
-                      ? "Saved"
-                      : "Save"}
+                        ? "Saved"
+                        : "Save"}
                   </button>
                 ) : null}
                 {validationError ? (
@@ -247,48 +247,65 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                   </div>
                 ) : null}
               </div>
-              {isEmail && value && !isVerified ? (
+              {textKey === "email" && isVerifiable && value ? (
                 <div className="record-input-row" style={{ marginTop: 4 }}>
-                  <span
-                    className="warning-inline"
-                    style={{ alignSelf: "center" }}
-                  >
-                    <span className="dot" aria-hidden />
-                    <span>Email not verified.</span>
-                    <button
-                      className="link-cta"
-                      onClick={() => setOpenVerifyModal(true)}
+                  {isVerified ? (
+                    <span
+                      className="success-inline"
+                      style={{ alignSelf: "center" }}
                     >
-                      Click here to verify
-                    </button>
-                  </span>
+                      <span className="dot" aria-hidden />
+                      <span>Verified.</span>
+                    </span>
+                  ) : (
+                    <span
+                      className="warning-inline"
+                      style={{ alignSelf: "center" }}
+                    >
+                      <span className="dot" aria-hidden />
+                      <span>Email not verified.</span>
+                      <button
+                        className="link-cta"
+                        onClick={() => setOpenVerifyModal(true)}
+                      >
+                        Click here to verify
+                      </button>
+                    </span>
+                  )}
                 </div>
               ) : null}
-              {textKey === "com.twitter" ? (
+              {textKey === "com.twitter" && isVerifiable && value ? (
                 <div className="record-input-row" style={{ marginTop: 4 }}>
-                  <span
-                    className="warning-inline"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    <button
-                      className="link-cta"
-                      onClick={() => setOpenTwitterProof(true)}
+                  {isVerified ? (
+                    <span
+                      className="success-inline"
+                      style={{ alignSelf: "center" }}
                     >
-                      Click here to verify
-                    </button>
-                  </span>
+                      <span className="dot" aria-hidden />
+                      <span>Verified.</span>
+                    </span>
+                  ) : (
+                    <span
+                      className="warning-inline"
+                      style={{ alignSelf: "center" }}
+                    >
+                      <span className="dot" aria-hidden />
+                      <span>X handle not verified.</span>
+                      <button
+                        className="link-cta"
+                        onClick={() => setOpenTwitterProof(true)}
+                      >
+                        Click here to verify
+                      </button>
+                    </span>
+                  )}
                 </div>
               ) : null}
             </>
           ) : (
             <div className="record-value">
               {renderValue(textKey, viewValue)}
-              {isEmail && viewValue ? (
+              {isVerifiable && viewValue ? (
                 <span
                   className="help-text"
                   style={{
@@ -321,8 +338,8 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                   {verifyRequesting
                     ? "Sending…"
                     : verifyRequested
-                    ? "Resend"
-                    : "Send verification"}
+                      ? "Resend"
+                      : "Send verification"}
                 </button>
               </>
             }
@@ -335,7 +352,9 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
             </p>
             {verifyRequested && !isVerified ? (
               <p className="help-text">
-                Email sent. Waiting for your confirmation reply…
+                Confirmation email sent. After you reply and it is confirmed
+                on-chain, your profile will show Verified after a refresh. No
+                further action is needed.
               </p>
             ) : null}
             {verifyError ? (
