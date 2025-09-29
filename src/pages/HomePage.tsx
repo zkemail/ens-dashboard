@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ConnectKitButton } from "connectkit";
 import { useAccount, useEnsName } from "wagmi";
 import { useEnsNamesForAddress } from "../hooks/useEnsNames";
