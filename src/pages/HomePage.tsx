@@ -103,11 +103,35 @@ export function HomePage() {
                         />
                       ))}
                   </ul>
+                ) : showSubdomains && remainingSubdomains.length > 0 ? (
+                  <ul className="list">
+                    {remainingSubdomains.map((name) => (
+                      <NameCard
+                        key={name}
+                        name={name}
+                        color={colorForName(name)}
+                      />
+                    ))}
+                  </ul>
                 ) : (
-                  <p className="muted">No ENS names found for this address.</p>
+                  <div style={{ textAlign: "center" }}>
+                    <p className="muted" style={{ marginBottom: 12 }}>
+                      No ENS names found for this address.
+                    </p>
+                    <div className="hero-actions">
+                      <a
+                        className="nav-cta"
+                        href="https://sepolia.app.ens.domains/"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Claim an ENS name on Sepolia
+                      </a>
+                    </div>
+                  </div>
                 )}
               </div>
-              {subdomainCount > 0 && (
+              {subdomainCount > 0 && initialList.length > 0 && (
                 <div
                   style={{
                     display: "flex",
