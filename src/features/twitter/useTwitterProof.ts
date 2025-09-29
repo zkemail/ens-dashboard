@@ -64,10 +64,12 @@ export function useTwitterProof() {
         });
         setStep("get-blueprint");
         const blueprint = await sdk.getBlueprint("benceharomi/X_HANDLE@v2");
-        // local noir circuit
+        // local noir circuit served from public/
         blueprint.getNoirCircuit = async () => {
-          const data = await (await fetch("/x_handle_noir.json")).json();
-          return data;
+          const url = `${import.meta.env.BASE_URL}x_handle_noir.json`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`Failed to load circuit at ${url}`);
+          return await res.json();
         };
         setStep("create-prover");
         const prover = blueprint.createProver({ isLocal: true });
