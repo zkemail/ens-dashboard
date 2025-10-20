@@ -63,7 +63,7 @@ export function useTwitterProof() {
           logging: { enabled: true, level: "debug" },
         });
         setStep("get-blueprint");
-        const blueprint = await sdk.getBlueprint("benceharomi/X_HANDLE@v2");
+        const blueprint = await sdk.getBlueprint("benceharomi/x_handle@v1");
         setStep("create-prover");
         const prover = blueprint.createProver({ isLocal: true });
 
