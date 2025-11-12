@@ -4,11 +4,13 @@ import { useTwitterProof } from "./features/twitter/useTwitterProof";
 
 function App() {
   const [file, setFile] = useState<File | null>(null);
-  const [command, setCommand] = useState<string>("Verify my X handle");
+  const [command, setCommand] = useState<string>(
+    "Withdraw all eth to 0xafbd210c60dd651892a61804a989eef7bd63cba0"
+  );
   const [isDragOver, setIsDragOver] = useState(false);
   const [progress, setProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { isLoading, error, result, json, step, run, reset } =
+  const { isLoading, isSubmitting, error, result, submitResult, json, step, run, submit, reset } =
     useTwitterProof();
 
   // Progress bar: approaches 100% with a 10s half-life while generating,
@@ -114,6 +116,7 @@ function App() {
                 borderRadius: "6px",
                 border: "1px solid var(--border)",
                 background: "var(--background)",
+                color: "var(--text)",
                 fontSize: "14px",
               }}
             />
@@ -245,7 +248,7 @@ function App() {
             </div>
           )}
 
-          {result && (
+          {result && !submitResult && (
             <div
               className="help-text"
               role="status"
@@ -260,6 +263,42 @@ function App() {
             </div>
           )}
 
+          {submitResult && (
+            <div
+              className="help-text"
+              role="status"
+              style={{
+                padding: "12px",
+                background: "rgba(59, 130, 246, 0.1)",
+                border: "1px solid rgba(59, 130, 246, 0.3)",
+                borderRadius: "6px",
+              }}
+            >
+              <div style={{ marginBottom: "8px" }}>
+                🎉 Proof submitted successfully!
+              </div>
+              <div style={{ fontSize: "12px", wordBreak: "break-all" }}>
+                <strong>Account:</strong> {submitResult.accountAddress}
+              </div>
+              <div style={{ fontSize: "12px", wordBreak: "break-all", marginTop: "4px" }}>
+                <strong>Transaction Hash:</strong> {submitResult.transactionHash}
+              </div>
+              <div style={{ fontSize: "12px", wordBreak: "break-all", marginTop: "4px" }}>
+                <strong>UserOp Hash:</strong> {submitResult.userOpHash}
+              </div>
+              <div style={{ marginTop: "8px" }}>
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${submitResult.transactionHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "rgb(59, 130, 246)", textDecoration: "underline" }}
+                >
+                  View on Etherscan →
+                </a>
+              </div>
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: "12px" }}>
             {!result ? (
               <button
@@ -270,6 +309,25 @@ function App() {
               >
                 {isLoading ? "Generating..." : "Generate Proof"}
               </button>
+            ) : !submitResult ? (
+              <>
+                <button
+                  className="link-cta"
+                  onClick={handleReset}
+                  disabled={isSubmitting}
+                  style={{ flex: 1 }}
+                >
+                  Reset
+                </button>
+                <button
+                  className="nav-cta"
+                  onClick={submit}
+                  disabled={isSubmitting}
+                  style={{ flex: 1 }}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Onchain"}
+                </button>
+              </>
             ) : (
               <button
                 className="nav-cta"

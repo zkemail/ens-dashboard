@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Buffer as BufferPolyfill } from "buffer";
+import { submitProofWithZeroDev } from "../../utils/zerodev";
 
 // Browser polyfills for libs expecting Node-like globals
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,8 +30,14 @@ type ProofResult = {
 
 export function useTwitterProof() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ProofResult | null>(null);
+  const [submitResult, setSubmitResult] = useState<{
+    userOpHash: string;
+    transactionHash: string;
+    accountAddress: string;
+  } | null>(null);
   const [step, setStep] = useState<string>("");
 
   const run = useCallback(
@@ -86,6 +93,47 @@ export function useTwitterProof() {
     [step]
   );
 
+  const submit = useCallback(async () => {
+    if (!result) {
+      setError("No proof to submit. Please generate a proof first.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    setStep("submit-onchain");
+
+    try {
+      console.log("🔄 Starting onchain submission...");
+      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const proofAny: any = result.proof as any;
+      const proofData = `0x${proofAny.props.proofData!}` as `0x${string}`;
+      const publicOutputs = proofAny.props.publicOutputs! as `0x${string}`[];
+
+      console.log("📦 Extracted proof data:", proofData);
+      console.log("📦 Extracted public outputs:", publicOutputs);
+
+      const submitResult = await submitProofWithZeroDev(proofData, publicOutputs);
+      
+      setSubmitResult({
+        userOpHash: submitResult.userOpHash,
+        transactionHash: submitResult.transactionHash,
+        accountAddress: submitResult.accountAddress,
+      });
+      
+      console.log("✅ Submission successful!");
+      setStep("submit-complete");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("❌ Submission error:", e);
+      setError(`Submission failed: ${msg}`);
+      setStep("submit-failed");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [result]);
+
   const json = useMemo(
     () => (result ? JSON.stringify(result, null, 2) : ""),
     [result]
@@ -93,18 +141,23 @@ export function useTwitterProof() {
 
   const reset = useCallback(() => {
     setIsLoading(false);
+    setIsSubmitting(false);
     setError(null);
     setResult(null);
+    setSubmitResult(null);
     setStep("");
   }, []);
 
   return {
     isLoading,
+    isSubmitting,
     error,
     result,
+    submitResult,
     json,
     step,
     run,
+    submit,
     reset,
   } as const;
 }
