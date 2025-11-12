@@ -12,7 +12,7 @@
   "dependencies": {
     "@ensdomains/ensjs": "^4.0.2",
     "@tanstack/react-query": "^5.89.0",
-    "@zk-email/sdk": "3.0.0-nightly.1",
+    "@zk-email/sdk": "3.0.0-nightly.11",
     "buffer": "^6.0.3",
     "connectkit": "^1.9.1",
     "react": "^19.1.1",
