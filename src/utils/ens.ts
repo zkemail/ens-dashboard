@@ -17,7 +17,7 @@ export function handleToEnsName(handleRaw: string): string {
 	const handle = (handleRaw || "")
 		.trim()
 		.replace(/^@/, "")
-		.replace(/_/g, "$"); // Replace all underscores with dollar signs
+		.replace(/_/g, "-"); // Replace all underscores with hyphens
 	return handle ? `${handle}.x.zkemail.eth` : "";
 }
 
