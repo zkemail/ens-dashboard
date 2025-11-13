@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { formatEther } from "viem";
 import {
 	handleToEnsName,
 	resolveEnsToPredictedAddress,
-	getSepoliaBalance,
 } from "../../utils/ens";
+import { useDebounce } from "../../hooks/useDebounce";
 
 export default function Pay() {
 	const [handle, setHandle] = useState("");
-	const ensName = useMemo(() => handleToEnsName(handle), [handle]);
+	const debouncedHandle = useDebounce(handle, 500);
+	const ensName = useMemo(() => handleToEnsName(debouncedHandle), [debouncedHandle]);
 	const [resolvedAddress, setResolvedAddress] = useState<`0x${string}` | null>(null);
 	const [isResolving, setIsResolving] = useState(false);
-	const [balance, setBalance] = useState<bigint | null>(null);
 	const [showDetails, setShowDetails] = useState(false);
 	const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
@@ -20,20 +19,14 @@ export default function Pay() {
 		async function run() {
 			setIsResolving(true);
 			setResolvedAddress(null);
-			setBalance(null);
 			const addr = await resolveEnsToPredictedAddress(ensName);
 			if (cancelled) return;
 			setResolvedAddress(addr);
-			if (addr) {
-				const bal = await getSepoliaBalance(addr);
-				if (!cancelled) setBalance(bal);
-			}
 			setIsResolving(false);
 		}
 		if (ensName) run();
 		else {
 			setResolvedAddress(null);
-			setBalance(null);
 		}
 		return () => {
 			cancelled = true;
@@ -278,22 +271,6 @@ export default function Pay() {
 								>
 									{ensName}
 								</div>
-								{balance != null && (
-									<div
-										style={{
-											display: "inline-block",
-											padding: "4px 12px",
-											background: "rgba(34, 197, 94, 0.1)",
-											border: "1px solid rgba(34, 197, 94, 0.3)",
-											borderRadius: "999px",
-											fontSize: "12px",
-											color: "#16a34a",
-											fontWeight: 500,
-										}}
-									>
-										Balance: {Number(formatEther(balance)).toFixed(4)} ETH
-									</div>
-								)}
 							</div>
 
 							<div style={{ display: "grid", gap: "10px" }}>
@@ -302,47 +279,89 @@ export default function Pay() {
 								</div>
 
 								{/* Crypto - Active */}
-								<button
-									onClick={() => onCopy(resolvedAddress, "crypto")}
+								<div
 									style={{
-										display: "flex",
-										alignItems: "center",
-										justifyContent: "space-between",
 										padding: "16px",
 										background: "rgba(96, 165, 250, 0.1)",
 										border: "2px solid rgb(96, 165, 250)",
 										borderRadius: "12px",
-										cursor: "pointer",
-										transition: "all 0.2s",
 										color: "var(--text)",
 									}}
 								>
-									<div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-										<div
-											style={{
-												width: "40px",
-												height: "40px",
-												borderRadius: "8px",
-												background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-												display: "flex",
-												alignItems: "center",
-												justifyContent: "center",
-												fontSize: "20px",
-											}}
-										>
-											⟠
-										</div>
-										<div style={{ textAlign: "left" }}>
-											<div style={{ fontWeight: 500 }}>Ethereum</div>
-											<div className="help-text" style={{ fontSize: "12px" }}>
-												Via ENS name or wallet
+									<button
+										onClick={() => onCopy(ensName, "crypto")}
+										style={{
+											display: "flex",
+											alignItems: "center",
+											justifyContent: "space-between",
+											width: "100%",
+											cursor: "pointer",
+											background: "transparent",
+											border: "none",
+											padding: 0,
+											color: "inherit",
+										}}
+									>
+										<div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+											<div
+												style={{
+													width: "40px",
+													height: "40px",
+													borderRadius: "8px",
+													background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+													display: "flex",
+													alignItems: "center",
+													justifyContent: "center",
+													fontSize: "20px",
+												}}
+											>
+												⟠
+											</div>
+											<div style={{ textAlign: "left" }}>
+												<div style={{ fontWeight: 500 }}>Ethereum</div>
+												<div className="help-text" style={{ fontSize: "12px" }}>
+													Via ENS name or wallet
+												</div>
 											</div>
 										</div>
-									</div>
-									<div style={{ fontSize: "13px", color: "rgb(96, 165, 250)", fontWeight: 500 }}>
-										{copiedItem === "crypto" ? "✓ Copied" : "Copy"}
-									</div>
-								</button>
+										<div style={{ fontSize: "13px", color: "rgb(96, 165, 250)", fontWeight: 500 }}>
+											{copiedItem === "crypto" ? "✓ Copied" : "Copy"}
+										</div>
+									</button>
+
+									<button
+										className="link-cta"
+										onClick={() => setShowDetails(!showDetails)}
+										style={{ justifyContent: "center", marginTop: "12px", width: "100%" }}
+									>
+										{showDetails ? "Hide" : "Show"} wallet address
+									</button>
+
+									{showDetails && resolvedAddress && (
+										<div
+											style={{
+												marginTop: "12px",
+												padding: "12px",
+												background: "rgba(0, 0, 0, 0.2)",
+												borderRadius: "8px",
+												fontSize: "13px",
+											}}
+										>
+											<div className="help-text" style={{ marginBottom: 4, fontSize: "11px" }}>
+												Wallet Address
+											</div>
+											<div
+												style={{
+													fontFamily: "ui-monospace, monospace",
+													wordBreak: "break-all",
+													fontSize: "12px",
+												}}
+											>
+												{resolvedAddress}
+											</div>
+										</div>
+									)}
+								</div>
 
 								{/* PayPal - Coming Soon */}
 								<div
@@ -498,53 +517,6 @@ export default function Pay() {
 									</div>
 								</div>
 							</div>
-
-							<button
-								className="link-cta"
-								onClick={() => setShowDetails(!showDetails)}
-								style={{ justifyContent: "center", marginTop: "4px" }}
-							>
-								{showDetails ? "Hide" : "Show"} technical details
-							</button>
-
-							{showDetails && (
-								<div
-									style={{
-										marginTop: "8px",
-										padding: "12px",
-										background: "var(--card)",
-										borderRadius: "8px",
-										fontSize: "13px",
-									}}
-								>
-									<div style={{ marginBottom: "8px" }}>
-										<div className="help-text" style={{ marginBottom: 4 }}>
-											ENS Name
-										</div>
-										<div
-											style={{
-												fontFamily: "ui-monospace, monospace",
-												wordBreak: "break-all",
-											}}
-										>
-											{ensName}
-										</div>
-									</div>
-									<div>
-										<div className="help-text" style={{ marginBottom: 4 }}>
-											Ethereum Address (Sepolia Testnet)
-										</div>
-										<div
-											style={{
-												fontFamily: "ui-monospace, monospace",
-												wordBreak: "break-all",
-											}}
-										>
-											{resolvedAddress}
-										</div>
-									</div>
-								</div>
-							)}
 						</div>
 					)}
 

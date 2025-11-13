@@ -10,9 +10,17 @@ function App() {
     <div>
       <nav className="nav">
         <div className="container nav-inner">
-          <div className="brand">
+          <Link to="/" className="brand" style={{ textDecoration: "none", color: "inherit" }}>
+            <img
+              src="/favicon-light.svg"
+              alt="Socials"
+              style={{
+                height: "28px",
+                width: "28px",
+              }}
+            />
             <span>socials</span>
-          </div>
+          </Link>
           <div className="nav-actions">
             <Link
               to="/"

@@ -2,7 +2,7 @@
 export const CONTRACTS = {
   sepolia: {
     // Replace with your actual contract address
-    entrypoint: "0x638A1f8aDB665F78aD3f218EabFa88fa244e4a0F" as `0x${string}`,
+    entrypoint: "0xDB1819eCaD574C1399E51512C7a0711A1Bf19b85" as `0x${string}`,
   },
 } as const;
 

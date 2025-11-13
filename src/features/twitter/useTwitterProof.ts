@@ -39,30 +39,43 @@ export function useTwitterProof() {
     accountAddress: string;
   } | null>(null);
   const [step, setStep] = useState<string>("");
+  const [progress, setProgress] = useState<number>(0);
 
   const run = useCallback(
     async (emlFile: File, command: string) => {
       setIsLoading(true);
       setError(null);
       setResult(null);
+      setProgress(0);
       try {
         if (!emlFile) throw new Error("Please choose a .eml file");
         const fileOk = emlFile.name?.toLowerCase().endsWith(".eml");
         if (!fileOk) throw new Error("File must be a .eml email export");
         const commandValue = String(command || "").trim();
         if (!commandValue) throw new Error("Command is required");
+        
         setStep("read-eml");
+        setProgress(5);
         const text = await emlFile.text();
+        
+        setStep("loading-sdk");
+        setProgress(10);
         const { default: initZkEmail } = await import("@zk-email/sdk");
         const { initNoirWasm } = await import("@zk-email/sdk/initNoirWasm");
+        
         setStep("init-sdk");
+        setProgress(20);
         const sdk = initZkEmail({
           baseUrl: "https://dev-conductor.zk.email",
           logging: { enabled: true, level: "debug" },
         });
+        
         setStep("get-blueprint");
+        setProgress(30);
         const blueprint = await sdk.getBlueprint("benceharomi/x_handle@v1");
+        
         setStep("create-prover");
+        setProgress(40);
         const prover = blueprint.createProver({ isLocal: true });
 
         const externalInputs = [
@@ -71,15 +84,22 @@ export function useTwitterProof() {
             value: commandValue,
           },
         ];
+        
         setStep("init-noir");
+        setProgress(50);
         const noirWasm = await initNoirWasm();
+        
         setStep("generate-proof");
+        setProgress(60);
         const proof = await prover.generateProof(text, externalInputs, {
           noirWasm,
         });
+        
         setStep("offchain-verification");
+        setProgress(90);
         const verification = await blueprint.verifyProof(proof, { noirWasm });
 
+        setProgress(100);
         // Do not submit onchain here; return result and allow a later submit action
         setResult({ proof, verification });
       } catch (e) {
@@ -146,6 +166,7 @@ export function useTwitterProof() {
     setResult(null);
     setSubmitResult(null);
     setStep("");
+    setProgress(0);
   }, []);
 
   return {
@@ -156,6 +177,7 @@ export function useTwitterProof() {
     submitResult,
     json,
     step,
+    progress,
     run,
     submit,
     reset,

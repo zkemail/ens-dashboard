@@ -1,21 +1,45 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { type Address, formatEther, isAddress } from "viem";
+import { type Address, formatEther } from "viem";
 import {
   handleToEnsName,
   resolveEnsToPredictedAddress,
   getSepoliaBalance,
+  resolveEnsOrAddress,
 } from "../../utils/ens";
 import { useTwitterProof } from "../twitter/useTwitterProof";
+import { useDebounce } from "../../hooks/useDebounce";
+
+function getStepLabel(step: string): string {
+  const labels: Record<string, string> = {
+    "read-eml": "Reading email file...",
+    "loading-sdk": "Loading cryptography libraries...",
+    "init-sdk": "Initializing SDK...",
+    "get-blueprint": "Fetching verification blueprint...",
+    "create-prover": "Setting up prover...",
+    "init-noir": "Initializing zero-knowledge engine...",
+    "generate-proof": "Generating proof (this may take a minute)...",
+    "offchain-verification": "Verifying proof...",
+  };
+  return labels[step] || "Processing...";
+}
 
 export default function Claim() {
   const [handle, setHandle] = useState("");
-  const ensName = useMemo(() => handleToEnsName(handle), [handle]);
+  const debouncedHandle = useDebounce(handle, 500);
+  const ensName = useMemo(
+    () => handleToEnsName(debouncedHandle),
+    [debouncedHandle]
+  );
   const [resolvedAddress, setResolvedAddress] = useState<Address | null>(null);
   const [isResolving, setIsResolving] = useState(false);
   const [balance, setBalance] = useState<bigint | null>(null);
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
 
-  const [withdrawTo, setWithdrawTo] = useState<Address | "">("");
+  const [withdrawTo, setWithdrawTo] = useState<string>("");
+  const debouncedWithdrawTo = useDebounce(withdrawTo, 500);
+  const [resolvedWithdrawAddress, setResolvedWithdrawAddress] =
+    useState<Address | null>(null);
+  const [isResolvingWithdraw, setIsResolvingWithdraw] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -26,6 +50,7 @@ export default function Claim() {
     result,
     submitResult,
     step,
+    progress,
     run,
     submit,
     reset,
@@ -56,11 +81,32 @@ export default function Claim() {
     };
   }, [ensName]);
 
-  const canGenerate = !!file && isAddress(withdrawTo || "0x") && !isLoading;
+  // Resolve withdrawal address (ENS or direct address)
+  useEffect(() => {
+    let cancelled = false;
+    async function resolveWithdraw() {
+      setIsResolvingWithdraw(true);
+      setResolvedWithdrawAddress(null);
+      const addr = await resolveEnsOrAddress(debouncedWithdrawTo);
+      if (cancelled) return;
+      setResolvedWithdrawAddress(addr);
+      setIsResolvingWithdraw(false);
+    }
+    if (debouncedWithdrawTo) resolveWithdraw();
+    else {
+      setResolvedWithdrawAddress(null);
+      setIsResolvingWithdraw(false);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedWithdrawTo]);
+
+  const canGenerate = !!file && !!resolvedWithdrawAddress && !isLoading;
 
   const handleGenerate = () => {
-    if (!file || !withdrawTo) return;
-    const cmd = `Withdraw all eth to ${withdrawTo}`;
+    if (!file || !resolvedWithdrawAddress) return;
+    const cmd = `Withdraw all eth to ${resolvedWithdrawAddress}`;
     run(file, cmd);
   };
 
@@ -271,10 +317,18 @@ export default function Claim() {
               </div>
               <div className="help-text">Available to withdraw</div>
 
-              {showTechnicalDetails && (
+              <button
+                className="link-cta"
+                onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
+                style={{ justifyContent: "center", marginTop: "12px" }}
+              >
+                {showTechnicalDetails ? "Hide" : "Show"} wallet address
+              </button>
+
+              {showTechnicalDetails && resolvedAddress && (
                 <div
                   style={{
-                    marginTop: "16px",
+                    marginTop: "12px",
                     padding: "12px",
                     background: "var(--card)",
                     borderRadius: "8px",
@@ -282,42 +336,23 @@ export default function Claim() {
                     textAlign: "left",
                   }}
                 >
-                  <div style={{ marginBottom: "8px" }}>
-                    <div className="help-text" style={{ marginBottom: 4 }}>
-                      ENS Name
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: "ui-monospace, monospace",
-                        wordBreak: "break-all",
-                      }}
-                    >
-                      {ensName}
-                    </div>
+                  <div
+                    className="help-text"
+                    style={{ marginBottom: 4, fontSize: "11px" }}
+                  >
+                    Wallet Address
                   </div>
-                  <div>
-                    <div className="help-text" style={{ marginBottom: 4 }}>
-                      Account Address
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: "ui-monospace, monospace",
-                        wordBreak: "break-all",
-                      }}
-                    >
-                      {resolvedAddress}
-                    </div>
+                  <div
+                    style={{
+                      fontFamily: "ui-monospace, monospace",
+                      wordBreak: "break-all",
+                      fontSize: "12px",
+                    }}
+                  >
+                    {resolvedAddress}
                   </div>
                 </div>
               )}
-
-              <button
-                className="link-cta"
-                onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
-                style={{ justifyContent: "center", marginTop: "12px" }}
-              >
-                {showTechnicalDetails ? "Hide" : "Show"} technical details
-              </button>
             </div>
           )}
 
@@ -393,16 +428,16 @@ export default function Claim() {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 500 }}>Ethereum Wallet</div>
                     <div className="help-text" style={{ fontSize: "12px" }}>
-                      Withdraw to any Ethereum address
+                      Withdraw to any address or ENS name
                     </div>
                   </div>
                 </div>
                 <input
                   id="to"
                   type="text"
-                  placeholder="Your wallet address (0x...)"
+                  placeholder="Address or ENS name (e.g., vitalik.eth or 0x...)"
                   value={withdrawTo}
-                  onChange={(e) => setWithdrawTo(e.target.value as Address)}
+                  onChange={(e) => setWithdrawTo(e.target.value)}
                   style={{
                     width: "100%",
                     padding: "10px 12px",
@@ -414,6 +449,43 @@ export default function Claim() {
                     fontSize: "13px",
                   }}
                 />
+
+                {/* ENS Resolution Feedback */}
+                {withdrawTo && (
+                  <div style={{ marginTop: "8px", fontSize: "12px" }}>
+                    {isResolvingWithdraw && (
+                      <div className="help-text">Resolving address...</div>
+                    )}
+                    {!isResolvingWithdraw && resolvedWithdrawAddress && (
+                      <div
+                        style={{
+                          padding: "8px 12px",
+                          background: "rgba(34, 197, 94, 0.1)",
+                          border: "1px solid rgba(34, 197, 94, 0.3)",
+                          borderRadius: "6px",
+                          color: "#16a34a",
+                        }}
+                      >
+                        ✓ Resolved to: {resolvedWithdrawAddress}
+                      </div>
+                    )}
+                    {!isResolvingWithdraw &&
+                      !resolvedWithdrawAddress &&
+                      withdrawTo.trim() && (
+                        <div
+                          style={{
+                            padding: "8px 12px",
+                            background: "rgba(239, 68, 68, 0.1)",
+                            border: "1px solid rgba(239, 68, 68, 0.3)",
+                            borderRadius: "6px",
+                            color: "#dc2626",
+                          }}
+                        >
+                          ⚠️ Invalid address or ENS name
+                        </div>
+                      )}
+                  </div>
+                )}
               </div>
 
               {/* Bank Account - Coming Soon */}
@@ -635,7 +707,7 @@ export default function Claim() {
             {(isLoading || result) && (
               <div
                 style={{
-                  padding: "12px",
+                  padding: "16px",
                   background: "rgba(96, 165, 250, 0.08)",
                   border: "1px solid rgba(96, 165, 250, 0.2)",
                   borderRadius: "10px",
@@ -646,13 +718,40 @@ export default function Claim() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    marginBottom: isLoading ? "12px" : 0,
                   }}
                 >
                   <span className="help-text">
-                    {isLoading ? step || "Processing..." : "✓ Proof ready"}
+                    {isLoading ? getStepLabel(step) : "✓ Proof ready"}
                   </span>
-                  {isLoading && <span className="help-text">Working...</span>}
+                  {isLoading && (
+                    <span className="help-text" style={{ fontWeight: 500 }}>
+                      {progress}%
+                    </span>
+                  )}
                 </div>
+                {isLoading && (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "8px",
+                      background: "rgba(148, 163, 184, 0.2)",
+                      borderRadius: "999px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${progress}%`,
+                        height: "100%",
+                        background:
+                          "linear-gradient(90deg, rgb(96, 165, 250), rgb(139, 92, 246))",
+                        borderRadius: "999px",
+                        transition: "width 0.3s ease-out",
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             )}
             {error && (
