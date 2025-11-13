@@ -6,6 +6,8 @@
       "dependencies": {
         "@ensdomains/ensjs": "^4.0.2",
         "@tanstack/react-query": "^5.89.0",
+        "@zerodev/ecdsa-validator": "^5.4.9",
+        "@zerodev/sdk": "^5.5.5",
         "@zk-email/sdk": "3.0.0-nightly.11",
         "buffer": "^6.0.3",
         "connectkit": "^1.9.1",
@@ -464,6 +466,10 @@
     "@walletconnect/window-getters": ["@walletconnect/window-getters@1.0.1", "", { "dependencies": { "tslib": "1.14.1" } }, "sha512-vHp+HqzGxORPAN8gY03qnbTMnhqIwjeRJNOMOAzePRg4xVEEE2WvYsI9G2NMjOknA8hnuYbU3/hwLcKbjhc8+Q=="],
 
     "@walletconnect/window-metadata": ["@walletconnect/window-metadata@1.0.1", "", { "dependencies": { "@walletconnect/window-getters": "^1.0.1", "tslib": "1.14.1" } }, "sha512-9koTqyGrM2cqFRW517BPY/iEtUDx2r1+Pwwu5m7sJ7ka79wi3EyqhqcICk/yDmv6jAS1rjKgTKXlEhanYjijcA=="],
+
+    "@zerodev/ecdsa-validator": ["@zerodev/ecdsa-validator@5.4.9", "", { "peerDependencies": { "@zerodev/sdk": "^5.4.13", "viem": "^2.28.0" } }, "sha512-9NVE8/sQIKRo42UOoYKkNdmmHJY8VlT4t+2MHD2ipLg21cpbY9fS17TGZh61+Bl3qlqc8pP23I6f89z9im7kuA=="],
+
+    "@zerodev/sdk": ["@zerodev/sdk@5.5.5", "", { "dependencies": { "semver": "^7.6.0" }, "peerDependencies": { "viem": "^2.28.0" } }, "sha512-z0EAk6PPQuK8OyZZe0h7D63ByxuwBnfQCaSE54Ii6TLw8u3rg8S1K1Brr6zIBE7MLLboGEiFX46NYMyK4PYPXg=="],
 
     "@zk-email/relayer-utils": ["@zk-email/relayer-utils@0.4.66-12", "", {}, "sha512-ABWbEh95xFiK0+CIV3IHGBMWPOKWVvV7z6uThLqMV3gRVN2Bx0XG6Ecysq2oWCpoUD0AOuUWBztd05i8lXmeFw=="],
 
