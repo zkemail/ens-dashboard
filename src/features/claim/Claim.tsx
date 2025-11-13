@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Address, formatEther, isAddress } from "viem";
+import { type Address, formatEther, isAddress } from "viem";
 import {
   handleToEnsName,
   resolveEnsToPredictedAddress,
@@ -309,7 +309,7 @@ export default function Claim() {
               >
                 {isLoading ? "Generating..." : "Generate Proof"}
               </button>
-            ) : (
+            ) : !submitResult ? (
               <>
                 <button
                   className="link-cta"
@@ -328,6 +328,14 @@ export default function Claim() {
                   {isSubmitting ? "Submitting..." : "Submit Withdraw"}
                 </button>
               </>
+            ) : (
+              <button
+                className="nav-cta"
+                onClick={handleReset}
+                style={{ flex: 1 }}
+              >
+                Withdraw Again
+              </button>
             )}
           </div>
         </div>

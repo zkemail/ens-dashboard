@@ -8,7 +8,6 @@ export const CONTRACTS = {
 
 // ZeroDev configuration
 export const ZERODEV_CONFIG = {
-  rpcUrl:
-    "https://rpc.zerodev.app/api/v3/1bff909d-a326-476e-bc31-db6c7a447fc2/chain/11155111",
+  rpcUrl: import.meta.env.VITE_ZERODEV_RPC_URL,
   chainId: 11155111, // Sepolia
 } as const;
