@@ -1,7 +1,7 @@
-import { type Address, createPublicClient, getAddress, http, namehash } from "viem";
+import { type Address, createPublicClient, getAddress, http } from "viem";
 import { sepolia } from "viem/chains";
-import { CONTRACTS, ZERODEV_CONFIG } from "../config/contracts";
-import { entrypointAbi } from "../config/abi";
+import { normalize } from "viem/ens";
+import { ZERODEV_CONFIG } from "../config/contracts";
 
 const client = createPublicClient({
 	chain: sepolia,
@@ -16,14 +16,12 @@ export function handleToEnsName(handleRaw: string): string {
 export async function resolveEnsToPredictedAddress(name: string): Promise<Address | null> {
 	try {
 		if (!name) return null;
-		const node = namehash(name);
-		const addr = await client.readContract({
-			address: CONTRACTS.sepolia.entrypoint,
-			abi: entrypointAbi,
-			functionName: "predictAddress",
-			args: [node],
+		const normalizedName = normalize(name);
+		const addr = await client.getEnsAddress({
+			name: normalizedName,
 		});
-		return getAddress(addr as Address);
+		if (!addr) return null;
+		return getAddress(addr);
 	} catch {
 		return null;
 	}
