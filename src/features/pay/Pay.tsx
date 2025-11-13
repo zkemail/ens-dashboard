@@ -54,85 +54,244 @@ export default function Pay() {
 		<div
 			style={{
 				minHeight: "100vh",
-				display: "flex",
-				alignItems: "center",
-				justifyContent: "center",
-				padding: "24px",
+				padding: "40px 24px",
 			}}
 		>
-			<div style={{ width: "100%", maxWidth: "680px", display: "grid", gap: "20px" }}>
-				<header style={{ textAlign: "center" }}>
-					<h1 style={{ fontSize: "32px", margin: 0, fontWeight: 700 }}>
-						Send money to any X profile
+			<div style={{ width: "100%", maxWidth: "720px", margin: "0 auto", display: "grid", gap: "32px" }}>
+				{/* Hero Section */}
+				<header style={{ textAlign: "center", paddingTop: "20px" }}>
+					<div
+						style={{
+							display: "inline-flex",
+							alignItems: "center",
+							gap: "12px",
+							marginBottom: "20px",
+							padding: "10px 20px",
+							background: "rgba(96, 165, 250, 0.08)",
+							borderRadius: "999px",
+							border: "1px solid rgba(96, 165, 250, 0.2)",
+						}}
+					>
+						<span style={{ fontSize: "14px", color: "var(--muted)" }}>Powered by</span>
+						<img
+							src="/ZKEmailLogo-light.svg"
+							alt="ZK Email"
+							style={{
+								height: "20px",
+							}}
+						/>
+					</div>
+					<h1
+						style={{
+							fontSize: "clamp(32px, 5vw, 48px)",
+							margin: "0 0 16px",
+							fontWeight: 700,
+							lineHeight: 1.2,
+						}}
+					>
+						Send money to any
+						<br />
+						<span
+							style={{
+								background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+								WebkitBackgroundClip: "text",
+								WebkitTextFillColor: "transparent",
+								backgroundClip: "text",
+							}}
+						>
+							X profile
+						</span>
 					</h1>
-					<p className="help-text" style={{ marginTop: "8px", fontSize: "15px" }}>
-						Support your favorite creators with just their handle
+					<p
+						style={{
+							marginTop: "12px",
+							fontSize: "17px",
+							color: "var(--muted)",
+							maxWidth: "480px",
+							margin: "0 auto",
+							lineHeight: 1.6,
+						}}
+					>
+						Support creators, pay friends, or send tips — all using just their X handle. No wallet needed.
 					</p>
+
+					{/* Feature badges */}
+					<div
+						style={{
+							display: "flex",
+							flexWrap: "wrap",
+							gap: "12px",
+							justifyContent: "center",
+							marginTop: "24px",
+						}}
+					>
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								gap: "6px",
+								padding: "6px 14px",
+								background: "var(--card)",
+								border: "1px solid var(--border)",
+								borderRadius: "999px",
+								fontSize: "13px",
+							}}
+						>
+							<span>⚡</span>
+							<span>Instant</span>
+						</div>
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								gap: "6px",
+								padding: "6px 14px",
+								background: "var(--card)",
+								border: "1px solid var(--border)",
+								borderRadius: "999px",
+								fontSize: "13px",
+							}}
+						>
+							<span>🔐</span>
+							<span>Secure</span>
+						</div>
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								gap: "6px",
+								padding: "6px 14px",
+								background: "var(--card)",
+								border: "1px solid var(--border)",
+								borderRadius: "999px",
+								fontSize: "13px",
+							}}
+						>
+							<span>🌍</span>
+							<span>Global</span>
+						</div>
+					</div>
 				</header>
 
+				{/* Search Card */}
 				<div
 					style={{
 						background: "var(--card)",
 						border: "1px solid var(--border)",
-						borderRadius: "16px",
-						padding: "24px",
+						borderRadius: "20px",
+						padding: "28px",
 						display: "grid",
-						gap: "18px",
-						boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+						gap: "20px",
+						boxShadow: "0 8px 24px rgba(0, 0, 0, 0.08)",
 					}}
 				>
 					<div>
-						<label htmlFor="handle" style={{ fontWeight: 500, fontSize: "15px" }}>
-							Enter X handle
-						</label>
-						<input
-							id="handle"
-							type="text"
-							placeholder="e.g., @vitalik"
-							value={handle}
-							onChange={(e) => setHandle(e.target.value)}
+						<label
+							htmlFor="handle"
 							style={{
-								width: "100%",
-								padding: "12px 14px",
-								borderRadius: "10px",
-								border: "1px solid var(--border)",
-								background: "var(--background)",
-								color: "var(--text)",
+								fontWeight: 600,
 								fontSize: "15px",
-								marginTop: "8px",
+								display: "block",
+								marginBottom: "10px",
 							}}
-						/>
+						>
+							Who do you want to send to?
+						</label>
+						<div style={{ position: "relative" }}>
+							<div
+								style={{
+									position: "absolute",
+									left: "16px",
+									top: "50%",
+									transform: "translateY(-50%)",
+									fontSize: "20px",
+									pointerEvents: "none",
+								}}
+							>
+								🔍
+							</div>
+							<input
+								id="handle"
+								type="text"
+								placeholder="Search X handle (e.g., @vitalik)"
+								value={handle}
+								onChange={(e) => setHandle(e.target.value)}
+								style={{
+									width: "100%",
+									padding: "14px 14px 14px 48px",
+									borderRadius: "12px",
+									border: "2px solid var(--border)",
+									background: "var(--background)",
+									color: "var(--text)",
+									fontSize: "16px",
+									transition: "border-color 0.2s",
+								}}
+								onFocus={(e) => {
+									e.target.style.borderColor = "rgb(96, 165, 250)";
+								}}
+								onBlur={(e) => {
+									e.target.style.borderColor = "var(--border)";
+								}}
+							/>
+						</div>
 					</div>
 
 					{ensName && resolvedAddress && (
 						<div
 							style={{
-								padding: "20px",
-								background: "var(--card)",
-								border: "1px solid var(--border)",
-								borderRadius: "12px",
+								padding: "24px",
+								background: "linear-gradient(135deg, rgba(96, 165, 250, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)",
+								border: "2px solid rgba(96, 165, 250, 0.2)",
+								borderRadius: "16px",
 								display: "grid",
-								gap: "16px",
-								boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+								gap: "20px",
+								animation: "slideIn 0.3s ease-out",
 							}}
 						>
 							<div style={{ textAlign: "center" }}>
-								<div className="help-text" style={{ marginBottom: "6px" }}>
-									Send to
+								<div
+									style={{
+										display: "inline-flex",
+										alignItems: "center",
+										justifyContent: "center",
+										width: "64px",
+										height: "64px",
+										borderRadius: "50%",
+										background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+										marginBottom: "16px",
+										fontSize: "32px",
+									}}
+								>
+									✓
+								</div>
+								<div className="help-text" style={{ marginBottom: "8px", fontSize: "13px" }}>
+									Send payment to
 								</div>
 								<div
 									style={{
-										fontSize: "20px",
-										fontWeight: 600,
+										fontSize: "24px",
+										fontWeight: 700,
 										fontFamily: "ui-monospace, monospace",
-										marginBottom: "4px",
+										marginBottom: "8px",
+										color: "var(--text)",
 									}}
 								>
 									{ensName}
 								</div>
 								{balance != null && (
-									<div className="help-text" style={{ fontSize: "13px" }}>
-										Current balance: {Number(formatEther(balance)).toFixed(4)} ETH
+									<div
+										style={{
+											display: "inline-block",
+											padding: "4px 12px",
+											background: "rgba(34, 197, 94, 0.1)",
+											border: "1px solid rgba(34, 197, 94, 0.3)",
+											borderRadius: "999px",
+											fontSize: "12px",
+											color: "#16a34a",
+											fontWeight: 500,
+										}}
+									>
+										Balance: {Number(formatEther(balance)).toFixed(4)} ETH
 									</div>
 								)}
 							</div>
