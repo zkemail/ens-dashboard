@@ -27,7 +27,7 @@ function App() {
               className="nav-cta"
               aria-current={location.pathname === "/" ? "page" : undefined}
             >
-              Tip X Handle
+              Tip GitHub Handle
             </Link>
             <Link
               to="/claim"

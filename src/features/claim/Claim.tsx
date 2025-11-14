@@ -6,7 +6,7 @@ import {
   getSepoliaBalance,
   resolveEnsOrAddress,
 } from "../../utils/ens";
-import { useTwitterProof } from "../twitter/useTwitterProof";
+import { useGithubProof } from "../github/useGithubProof";
 import { useDebounce } from "../../hooks/useDebounce";
 
 function getStepLabel(step: string): string {
@@ -54,7 +54,7 @@ export default function Claim() {
     run,
     submit,
     reset,
-  } = useTwitterProof();
+  } = useGithubProof();
 
   useEffect(() => {
     let cancelled = false;
@@ -186,7 +186,7 @@ export default function Claim() {
               lineHeight: 1.6,
             }}
           >
-            Verify your X account ownership and withdraw your funds securely
+            Verify your GitHub account ownership and withdraw your funds securely
           </p>
 
           {/* Feature badges */}
@@ -263,7 +263,7 @@ export default function Claim() {
               htmlFor="handle"
               style={{ fontWeight: 500, fontSize: "15px" }}
             >
-              Your X handle
+              Your GitHub handle
             </label>
             <input
               id="handle"
@@ -368,7 +368,7 @@ export default function Claim() {
             >
               <div style={{ marginBottom: "6px" }}>⚠️ Handle not found</div>
               <div className="help-text">
-                This X handle hasn't set up their account yet
+                This GitHub handle hasn't set up their account yet
               </div>
             </div>
           )}
@@ -658,10 +658,10 @@ export default function Claim() {
                   fontSize: "15px",
                 }}
               >
-                Verify your X account
+                Verify your GitHub account
               </label>
               <div className="help-text" style={{ marginBottom: "12px" }}>
-                Upload your X password reset email to prove ownership
+                Upload your GitHub password reset email to prove ownership
               </div>
               <div
                 onClick={() => !isLoading && inputRef.current?.click()}

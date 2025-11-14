@@ -92,7 +92,7 @@ export default function Pay() {
 								backgroundClip: "text",
 							}}
 						>
-							X profile
+							GitHub profile
 						</span>
 					</h1>
 					<p
@@ -105,7 +105,7 @@ export default function Pay() {
 							lineHeight: 1.6,
 						}}
 					>
-						Support creators, pay friends, or send tips — all using just their X handle. No wallet needed.
+						Support creators, pay friends, or send tips — all using just their GitHub handle. No wallet needed.
 					</p>
 
 					{/* Feature badges */}
@@ -206,7 +206,7 @@ export default function Pay() {
 							<input
 								id="handle"
 								type="text"
-								placeholder="Search X handle (e.g., @vitalik)"
+								placeholder="Search GitHub handle (e.g., @octocat)"
 								value={handle}
 								onChange={(e) => setHandle(e.target.value)}
 								style={{
@@ -544,7 +544,7 @@ export default function Pay() {
 						>
 							<div style={{ marginBottom: "6px" }}>⚠️ Handle not found</div>
 							<div className="help-text">
-								This X handle hasn't set up their account yet
+								This GitHub handle hasn't set up their account yet
 							</div>
 						</div>
 					)}

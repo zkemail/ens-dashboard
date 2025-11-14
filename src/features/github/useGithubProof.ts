@@ -28,7 +28,7 @@ type ProofResult = {
   verification: unknown;
 };
 
-export function useTwitterProof() {
+export function useGithubProof() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +72,7 @@ export function useTwitterProof() {
         
         setStep("get-blueprint");
         setProgress(30);
-        const blueprint = await sdk.getBlueprint("benceharomi/x_handle@v1");
+        const blueprint = await sdk.getBlueprint("benceharomi/github_handle@v1");
         
         setStep("create-prover");
         setProgress(40);
@@ -104,7 +104,7 @@ export function useTwitterProof() {
         setResult({ proof, verification });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        console.error("Twitter proof error at", step, e);
+        console.error("GitHub proof error at", step, e);
         setError(step ? `${msg} (at ${step})` : msg);
       } finally {
         setIsLoading(false);
@@ -183,3 +183,4 @@ export function useTwitterProof() {
     reset,
   } as const;
 }
+

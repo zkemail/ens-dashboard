@@ -5,6 +5,7 @@
 Before you can submit proofs onchain, you need to set the contract address:
 
 ### Option 1: Direct Edit (Quick Start)
+
 Edit `src/config/contracts.ts` and replace the placeholder contract address:
 
 ```typescript
@@ -16,6 +17,7 @@ export const CONTRACTS = {
 ```
 
 ### Option 2: Environment Variable
+
 1. Create a `.env` file in the project root
 2. Add your contract address:
    ```
@@ -26,12 +28,14 @@ export const CONTRACTS = {
 ## How It Works
 
 ### Proof Generation
-1. Upload a `.eml` file (password reset email from X/Twitter)
+
+1. Upload a `.eml` file (password reset email from GitHub)
 2. Enter a command (default: withdrawal to specified address)
 3. Click "Generate Proof"
 4. Wait for the ZK proof to be generated (~30-60 seconds)
 
 ### Onchain Submission (Gasless via ZeroDev)
+
 1. After proof generation, click "Submit Onchain"
 2. The app will:
    - Extract proof data and public outputs
@@ -50,6 +54,7 @@ export const CONTRACTS = {
 ## ZeroDev Configuration
 
 The app uses ZeroDev with the following configuration:
+
 - **Chain**: Sepolia (Chain ID: 11155111)
 - **RPC URL**: Pre-configured in `src/config/contracts.ts`
 - **Paymaster**: Sponsors all transaction gas fees
@@ -58,6 +63,7 @@ The app uses ZeroDev with the following configuration:
 ## Debugging
 
 All steps are logged to the browser console with emoji prefixes:
+
 - 🚀 Starting process
 - 📝 Step execution
 - ✅ Success
@@ -68,4 +74,3 @@ All steps are logged to the browser console with emoji prefixes:
 - 🎉 Completion
 
 Open DevTools (F12) to see detailed logs during proof generation and submission.
-

@@ -18,7 +18,7 @@ export function handleToEnsName(handleRaw: string): string {
 		.trim()
 		.replace(/^@/, "")
 		.replace(/_/g, "-"); // Replace all underscores with hyphens
-	return handle ? `${handle}.x.zkemail.eth` : "";
+	return handle ? `${handle}.github.zkemail.eth` : "";
 }
 
 export async function resolveEnsToPredictedAddress(name: string): Promise<Address | null> {
