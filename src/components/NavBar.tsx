@@ -21,7 +21,12 @@ export function NavBar({ right }: { right?: ReactNode }) {
             />
           </Link>
         </div>
-        <div className="nav-actions">{right}</div>
+        <div className="nav-actions">
+          <Link to="/benchmark" className="nav-cta">
+            Benchmark
+          </Link>
+          {right}
+        </div>
       </div>
     </header>
   );
