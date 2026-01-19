@@ -105,6 +105,9 @@ export function useBenchmark() {
           setCurrentRun(i + 1);
           const startTime = performance.now();
 
+          let proofTimeMs = 0;
+          let verificationTimeMs = 0;
+
           try {
             // Generate proof (measure separately)
             const proofStartTime = performance.now();
@@ -112,14 +115,13 @@ export function useBenchmark() {
               noirWasm,
             });
             const proofEndTime = performance.now();
-            const proofTimeMs = proofEndTime - proofStartTime;
+            proofTimeMs = proofEndTime - proofStartTime;
 
             // Verify proof (measure separately)
             const verificationStartTime = performance.now();
             await blueprint.verifyProof(proof, { noirWasm });
             const verificationEndTime = performance.now();
-            const verificationTimeMs =
-              verificationEndTime - verificationStartTime;
+            verificationTimeMs = verificationEndTime - verificationStartTime;
 
             const endTime = performance.now();
             const timeMs = endTime - startTime;
@@ -136,11 +138,8 @@ export function useBenchmark() {
             const timeMs = endTime - startTime;
             const msg = e instanceof Error ? e.message : String(e);
 
-            // Try to determine if error occurred during proof or verification
-            // If we don't have proof time, assume it failed during proof generation
-            const proofTimeMs = 0;
-            const verificationTimeMs = 0;
-
+            // Capture partial timing: if proof succeeded but verification failed,
+            // proofTimeMs will be set; if proof failed, both remain 0
             results.push({
               runNumber: i + 1,
               timeMs,
