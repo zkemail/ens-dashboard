@@ -22,9 +22,9 @@ export function NavBar({ right }: { right?: ReactNode }) {
           </Link>
         </div>
         <div className="nav-actions">
-          <Link to="/benchmark" className="nav-cta">
+          {/* <Link to="/benchmark" className="nav-cta">
             Benchmark
-          </Link>
+          </Link> */}
           {right}
         </div>
       </div>
