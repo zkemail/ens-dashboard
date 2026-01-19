@@ -70,7 +70,7 @@ export function BenchmarkPage() {
         <section className="container hero">
           <h1 className="title">Proof Generation Benchmark</h1>
           <p className="subtitle">
-            Benchmark local Noir proof generation performance
+            Benchmark local Noir proof generation performance using X/Twitter emails
           </p>
 
           <div
@@ -94,6 +94,17 @@ export function BenchmarkPage() {
               >
                 EML File
               </label>
+              <p
+                className="help-text"
+                style={{
+                  marginTop: 0,
+                  marginBottom: "8px",
+                  fontSize: "13px",
+                  color: "var(--muted)",
+                }}
+              >
+                Use any X/Twitter email (e.g., password reset, verification, notifications)
+              </p>
               <div
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
