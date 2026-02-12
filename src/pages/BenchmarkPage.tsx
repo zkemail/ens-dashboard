@@ -7,7 +7,7 @@ import { useBenchmark } from "../features/benchmark/useBenchmark";
 export function BenchmarkPage() {
   const [file, setFile] = useState<File | null>(null);
   const [command, setCommand] = useState("Link my x handle to test");
-  const [numRuns, setNumRuns] = useState(5);
+  const [numRuns, setNumRuns] = useState<number | "">(5);
   const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const {
@@ -209,9 +209,20 @@ export function BenchmarkPage() {
                 className="input"
                 value={numRuns}
                 onChange={(e) => {
-                  const value = parseInt(e.target.value, 10);
-                  if (!isNaN(value) && value > 0 && value <= 100) {
-                    setNumRuns(value);
+                  const value = e.target.value;
+                  if (value === "") {
+                    setNumRuns("");
+                  } else {
+                    const numValue = parseInt(value, 10);
+                    if (!isNaN(numValue) && numValue >= 1 && numValue <= 100) {
+                      setNumRuns(numValue);
+                    }
+                  }
+                }}
+                onBlur={(e) => {
+                  // If empty on blur, reset to default value
+                  if (e.target.value === "") {
+                    setNumRuns(5);
                   }
                 }}
                 min={1}
@@ -232,12 +243,17 @@ export function BenchmarkPage() {
               <button
                 className="nav-cta btn-primary"
                 onClick={() => {
-                  if (file) {
+                  if (file && typeof numRuns === "number") {
                     runBenchmark(file, command, numRuns);
                   }
                 }}
-                disabled={!file || isRunning || !command.trim()}
-                style={{ width: "100%", height: "44px" }}
+                disabled={!file || isRunning || !command.trim() || numRuns === ""}
+                style={{
+                  width: "100%",
+                  height: "44px",
+                  opacity: !file || isRunning || !command.trim() || numRuns === "" ? 0.5 : 1,
+                  cursor: !file || isRunning || !command.trim() || numRuns === "" ? "not-allowed" : "pointer",
+                }}
               >
                 {isRunning
                   ? `Running ${currentRun}/${totalRuns}...`
