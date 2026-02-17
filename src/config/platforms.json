@@ -1,0 +1,30 @@
+[
+  {
+    "key": "com.twitter",
+    "label": "X",
+    "placeholder": "username",
+    "verifiable": true,
+    "verifierAddress": "0x8d7C85b92263DC99fAd2a43e1c80438eE7d84818",
+    "blueprintSlug": "benceharomi/X_HANDLE@v2",
+    "commandTemplate": "Link my x handle to {ensName}",
+    "estimatedProveDurationMs": 10000,
+    "displayPrefix": "@",
+    "urlTemplate": "https://x.com/{handle}"
+  },
+  {
+    "key": "com.github",
+    "label": "GitHub",
+    "placeholder": "username",
+    "verifiable": false,
+    "displayPrefix": "@",
+    "urlTemplate": "https://github.com/{handle}"
+  },
+  {
+    "key": "org.telegram",
+    "label": "Telegram",
+    "placeholder": "username",
+    "verifiable": false,
+    "displayPrefix": "@",
+    "urlTemplate": "https://t.me/{handle}"
+  }
+]

@@ -1,11 +1,9 @@
-export const COMMON_KEYS = [
+/** Record keys that are not defined in platforms.json (email, url, avatar, description). */
+export const NON_PLATFORM_KEYS = [
   "email",
   "url",
   "avatar",
-  "com.twitter",
-  "com.github",
-  "org.telegram",
   "description",
 ] as const;
 
-export type RecordKey = (typeof COMMON_KEYS)[number];
+export type BaseRecordKey = (typeof NON_PLATFORM_KEYS)[number];

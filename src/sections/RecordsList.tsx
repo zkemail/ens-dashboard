@@ -1,4 +1,3 @@
-// UI-only module; wagmi hooks are encapsulated in useRecordText
 import React, {
   useEffect,
   useRef,
@@ -6,12 +5,15 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from "react";
-//
-import { COMMON_KEYS, type RecordKey } from "../features/records/constants";
+import type { RecordKey } from "../config/platforms";
+import { RECORD_KEYS } from "../config/platforms";
 import { labelForKey } from "../features/records/validators";
 import { useRecordText } from "../features/records/useRecordText";
 import { Modal } from "../components/Modal";
-import { TwitterProofModal } from "../components/TwitterProofModal";
+import { ProofModal } from "../components/ProofModal";
+import { placeholderForKey } from "../features/records/placeholders";
+import { getPlatform } from "../config/platforms";
+import { useProof } from "../features/proving/useProof";
 
 export function RecordsList({
   name,
@@ -23,13 +25,12 @@ export function RecordsList({
   onDirtyStateChange?: (hasChanges: boolean) => void;
 }) {
   const itemHandles = useRef<Record<RecordKey, RecordItemHandle | null>>(
-    {} as Record<RecordKey, RecordItemHandle | null>
+    {} as Record<RecordKey, RecordItemHandle | null>,
   );
 
   const [dirtyKeys, setDirtyKeys] = useState<Set<RecordKey>>(new Set());
   const [savingAll, setSavingAll] = useState(false);
 
-  // Notify parent about dirty state
   useEffect(() => {
     onDirtyStateChange?.(dirtyKeys.size > 0);
   }, [dirtyKeys, onDirtyStateChange]);
@@ -49,7 +50,7 @@ export function RecordsList({
     if (!hasChanges || savingAll) return;
     setSavingAll(true);
     try {
-      const tasks = COMMON_KEYS.map((k) => {
+      const tasks = RECORD_KEYS.map((k) => {
         const inst = itemHandles.current[k];
         if (!inst) return Promise.resolve(false);
         if (inst.isSaving()) return Promise.resolve(false);
@@ -57,7 +58,6 @@ export function RecordsList({
         return inst.saveIfDirty();
       });
       const results = await Promise.all(tasks);
-      // filter out undefined and unsuccessful saves
       const anySaved = (results || []).some((r) => r === true);
       if (anySaved) {
         setDirtyKeys(new Set());
@@ -69,7 +69,7 @@ export function RecordsList({
 
   const onRevertAll = () => {
     const nextDirty = new Set<RecordKey>();
-    COMMON_KEYS.forEach((k) => {
+    RECORD_KEYS.forEach((k) => {
       const inst = itemHandles.current[k];
       if (!inst) return;
       if (inst.isSaving()) {
@@ -111,7 +111,7 @@ export function RecordsList({
         </div>
       )}
       <ul className="list" style={{ marginTop: 16 }}>
-        {COMMON_KEYS.map((key) => (
+        {RECORD_KEYS.map((key) => (
           <RecordItem
             key={key}
             ref={(inst) => {
@@ -164,8 +164,19 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
       save,
       resetDraft,
     } = useRecordText(name, textKey);
+
     const [openVerifyModal, setOpenVerifyModal] = useState(false);
-    const [openTwitterProof, setOpenTwitterProof] = useState(false);
+    const [openProofModal, setOpenProofModal] = useState(false);
+
+    const platform = getPlatform(textKey);
+    const proofHook = useProof(
+      platform ?? {
+        key: textKey,
+        label: textKey,
+        placeholder: "",
+        verifiable: false,
+      },
+    );
 
     const label = labelForKey(textKey);
 
@@ -191,7 +202,6 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
       },
     }));
 
-    // Hide empty values when not editing (use on-chain data, not draft)
     const viewValue = originalValue;
     if (!editing && !viewValue) return null;
 
@@ -247,6 +257,7 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                   </div>
                 ) : null}
               </div>
+              {/* Email verification (uses separate backend flow) */}
               {textKey === "email" && isVerifiable && value ? (
                 <div className="record-input-row" style={{ marginTop: 4 }}>
                   {isVerified ? (
@@ -274,7 +285,8 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                   )}
                 </div>
               ) : null}
-              {textKey === "com.twitter" && isVerifiable && value ? (
+              {/* Platform proof verification (only when platform is verifiable) */}
+              {platform?.verifiable && isVerifiable && value ? (
                 <div className="record-input-row" style={{ marginTop: 4 }}>
                   {isVerified ? (
                     <span
@@ -290,10 +302,10 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
                       style={{ alignSelf: "center" }}
                     >
                       <span className="dot" aria-hidden />
-                      <span>X handle not verified.</span>
+                      <span>{platform.label} handle not verified.</span>
                       <button
                         className="link-cta"
-                        onClick={() => setOpenTwitterProof(true)}
+                        onClick={() => setOpenProofModal(true)}
                       >
                         Click here to verify
                       </button>
@@ -318,6 +330,7 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
               ) : null}
             </div>
           )}
+          {/* Email verification modal */}
           <Modal
             open={openVerifyModal}
             onClose={() => setOpenVerifyModal(false)}
@@ -345,10 +358,10 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
             }
           >
             <p>
-              We’ll send an email to the address you entered. Reply to that
+              We'll send an email to the address you entered. Reply to that
               email with the word
               <strong> confirm</strong>. Our backend will verify and update
-              on-chain. Once done, you’ll see this email marked as verified.
+              on-chain. Once done, you'll see this email marked as verified.
             </p>
             {verifyRequested && !isVerified ? (
               <p className="help-text">
@@ -363,21 +376,23 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
               </p>
             ) : null}
           </Modal>
-          {textKey === "com.twitter" ? (
-            <TwitterProofModal
-              open={openTwitterProof}
-              onClose={() => setOpenTwitterProof(false)}
+          {/* Platform proof modal (only when platform supports verification) */}
+          {platform?.verifiable ? (
+            <ProofModal
+              open={openProofModal}
+              onClose={() => setOpenProofModal(false)}
               ensName={name}
+              platformName={platform.label}
+              estimatedDurationMs={platform.estimatedProveDurationMs ?? 10_000}
+              buildCommand={platform.buildCommand ?? (() => "")}
+              hook={proofHook}
             />
           ) : null}
         </div>
       </li>
     );
-  }
+  },
 );
-
-// Placeholders are part of records feature
-import { placeholderForKey } from "../features/records/placeholders";
 
 function renderValue(key: RecordKey, value: string) {
   const textStyle: React.CSSProperties = {
@@ -386,6 +401,22 @@ function renderValue(key: RecordKey, value: string) {
     whiteSpace: "nowrap",
   };
   if (!value) return null;
+
+  // Dynamic platform rendering
+  const platform = getPlatform(key);
+  if (platform?.formatUrl) {
+    const handle = value.replace(/^@/, "");
+    const href = platform.formatUrl(handle);
+    const display = platform.displayPrefix
+      ? `${platform.displayPrefix}${handle}`
+      : handle;
+    return (
+      <a href={href} className="pill-link" target="_blank" rel="noreferrer">
+        {display}
+      </a>
+    );
+  }
+
   switch (key) {
     case "email": {
       const href = `mailto:${value}`;
@@ -400,33 +431,6 @@ function renderValue(key: RecordKey, value: string) {
       return (
         <a href={href} className="pill-link" target="_blank" rel="noreferrer">
           {value}
-        </a>
-      );
-    }
-    case "com.twitter": {
-      const handle = value.replace(/^@/, "");
-      const href = `https://x.com/${handle}`;
-      return (
-        <a href={href} className="pill-link" target="_blank" rel="noreferrer">
-          @{handle}
-        </a>
-      );
-    }
-    case "com.github": {
-      const handle = value.replace(/^@/, "");
-      const href = `https://github.com/${handle}`;
-      return (
-        <a href={href} className="pill-link" target="_blank" rel="noreferrer">
-          {handle}
-        </a>
-      );
-    }
-    case "org.telegram": {
-      const handle = value.replace(/^@/, "");
-      const href = `https://t.me/${handle}`;
-      return (
-        <a href={href} className="pill-link" target="_blank" rel="noreferrer">
-          @{handle}
         </a>
       );
     }
@@ -458,6 +462,3 @@ function renderValue(key: RecordKey, value: string) {
       return <span style={textStyle}>{value}</span>;
   }
 }
-
-// Modal rendering outside the component body is not possible; include within list item
-// but defined here for clarity in diffs.
