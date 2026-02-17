@@ -3,28 +3,28 @@
     "key": "com.twitter",
     "label": "X",
     "placeholder": "username",
+    "urlTemplate": "https://x.com/{handle}",
+    "displayPrefix": "@",
     "verifiable": true,
-    "verifierAddress": "0x8d7C85b92263DC99fAd2a43e1c80438eE7d84818",
     "blueprintSlug": "benceharomi/X_HANDLE@v2",
     "commandTemplate": "Link my x handle to {ensName}",
-    "estimatedProveDurationMs": 10000,
-    "displayPrefix": "@",
-    "urlTemplate": "https://x.com/{handle}"
+    "verifierAddress": "0x8d7C85b92263DC99fAd2a43e1c80438eE7d84818",
+    "estimatedProveDurationMs": 10000
   },
   {
     "key": "com.github",
     "label": "GitHub",
     "placeholder": "username",
-    "verifiable": false,
+    "urlTemplate": "https://github.com/{handle}",
     "displayPrefix": "@",
-    "urlTemplate": "https://github.com/{handle}"
+    "verifiable": false
   },
   {
     "key": "org.telegram",
     "label": "Telegram",
     "placeholder": "username",
-    "verifiable": false,
+    "urlTemplate": "https://t.me/{handle}",
     "displayPrefix": "@",
-    "urlTemplate": "https://t.me/{handle}"
+    "verifiable": false
   }
 ]

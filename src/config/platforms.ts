@@ -6,13 +6,13 @@ export interface PlatformConfigData {
   key: string;
   label: string;
   placeholder: string;
+  urlTemplate?: string;
+  displayPrefix?: string;
   verifiable: boolean;
-  verifierAddress?: string;
   blueprintSlug?: string;
   commandTemplate?: string;
+  verifierAddress?: string;
   estimatedProveDurationMs?: number;
-  displayPrefix?: string;
-  urlTemplate?: string;
 }
 
 /** Runtime platform config with optional proof fields and derived functions. */
@@ -34,9 +34,7 @@ export interface PlatformConfig {
 
 const handleNormalize = (raw: string) => raw.replace(/^@+/, "").trim();
 const handleValidate = (v: string) =>
-  /^[A-Za-z0-9_.]{1,30}$/.test(v)
-    ? null
-    : "Use letters, numbers, '_' or '.'";
+  /^[A-Za-z0-9_.]{1,30}$/.test(v) ? null : "Use letters, numbers, '_' or '.'";
 
 function fromTemplate(
   template: string,
@@ -51,7 +49,8 @@ function fromTemplate(
 
 import platformsJson from "./platforms.json";
 
-const platformsData: PlatformConfigData[] = platformsJson as PlatformConfigData[];
+const platformsData: PlatformConfigData[] =
+  platformsJson as PlatformConfigData[];
 
 export const PLATFORMS: PlatformConfig[] = platformsData.map((d) => {
   const config: PlatformConfig = {
