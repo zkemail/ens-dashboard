@@ -82,14 +82,7 @@ export function useBenchmark() {
           baseUrl: "https://dev-conductor.zk.email",
           logging: { enabled: false, level: "info" },
         });
-        const blueprint = await sdk.getBlueprint("benceharomi/X_HANDLE@v2");
-        // local noir circuit served from public/
-        blueprint.getNoirCircuit = async () => {
-          const url = `${import.meta.env.BASE_URL}x_handle_noir.json`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`Failed to load circuit at ${url}`);
-          return await res.json();
-        };
+        const blueprint = await sdk.getBlueprint("benceharomi/x_handle@v1");
         const prover = blueprint.createProver({ isLocal: true });
         const noirWasm = await initNoirWasm();
 
@@ -156,7 +149,7 @@ export function useBenchmark() {
         const times = successfulResults.map((r) => r.timeMs);
         const proofTimes = successfulResults.map((r) => r.proofTimeMs);
         const verificationTimes = successfulResults.map(
-          (r) => r.verificationTimeMs
+          (r) => r.verificationTimeMs,
         );
 
         const averageTimeMs =
@@ -209,7 +202,7 @@ export function useBenchmark() {
         setTotalRuns(0);
       }
     },
-    []
+    [],
   );
 
   const reset = useCallback(() => {

@@ -63,14 +63,7 @@ export function useTwitterProof() {
           logging: { enabled: true, level: "debug" },
         });
         setStep("get-blueprint");
-        const blueprint = await sdk.getBlueprint("benceharomi/X_HANDLE@v2");
-        // local noir circuit served from public/
-        blueprint.getNoirCircuit = async () => {
-          const url = `${import.meta.env.BASE_URL}x_handle_noir.json`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`Failed to load circuit at ${url}`);
-          return await res.json();
-        };
+        const blueprint = await sdk.getBlueprint("benceharomi/x_handle@v1");
         setStep("create-prover");
         const prover = blueprint.createProver({ isLocal: true });
 
