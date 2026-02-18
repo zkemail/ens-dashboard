@@ -1,6 +1,7 @@
 import { concatHex, type Hex } from "viem";
+import { BACKEND_URL } from "../../config/env";
 
-const REMOTE_PROVER_URL = "https://noir-prover.zk.email/prove";
+const REMOTE_PROVER_URL = `${BACKEND_URL}/prove`;
 
 interface RemoteProofResponse {
   proof: Hex[];
