@@ -26,5 +26,17 @@
     "urlTemplate": "https://t.me/{handle}",
     "displayPrefix": "@",
     "verifiable": false
+  },
+  {
+    "key": "com.discord",
+    "label": "Discord",
+    "placeholder": "username",
+    "urlTemplate": "https://discord.com/users/{handle}",
+    "displayPrefix": "@",
+    "verifiable": true,
+    "blueprintSlug": "zkemail/discord_handle@v1",
+    "commandTemplate": "Link my Discord handle to {ensName}",
+    "verifierAddress": "0x0000000000000000000000000000000000000000",
+    "estimatedProveDurationMs": 100000
   }
 ]
