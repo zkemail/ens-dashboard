@@ -11,6 +11,7 @@ export interface PlatformConfigData {
   verifiable: boolean;
   blueprintSlug?: string;
   commandTemplate?: string;
+  gmailQuery?: string;
   verifierAddress?: string;
   estimatedProveDurationMs?: number;
 }
@@ -24,6 +25,8 @@ export interface PlatformConfig {
   verifiable: boolean;
   verifierAddress?: `0x${string}`;
   blueprintSlug?: string;
+  /** Gmail search query for OAuth flow (e.g. from:info@x.com subject:"Password reset request"). */
+  gmailQuery?: string;
   buildCommand?: (ensName: string) => string;
   estimatedProveDurationMs?: number;
   normalize?: (raw: string) => string;
@@ -65,6 +68,7 @@ export const PLATFORMS: PlatformConfig[] = platformsData.map((d) => {
     if (d.verifierAddress)
       config.verifierAddress = d.verifierAddress as `0x${string}`;
     if (d.blueprintSlug) config.blueprintSlug = d.blueprintSlug;
+    if (d.gmailQuery) config.gmailQuery = d.gmailQuery;
     if (d.estimatedProveDurationMs)
       config.estimatedProveDurationMs = d.estimatedProveDurationMs;
     if (d.commandTemplate)

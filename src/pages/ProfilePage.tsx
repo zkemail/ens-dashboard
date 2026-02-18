@@ -5,6 +5,12 @@ import { NavBar } from "../components/NavBar";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { RecordsList } from "../sections/RecordsList";
 import { colorForName } from "../utils/color";
+import {
+  PENDING_OAUTH_PROOF_KEY,
+  type PendingOAuthProof,
+} from "./AuthCallbackPage";
+
+export type { PendingOAuthProof };
 
 export function ProfilePage() {
   const { ensName = "" } = useParams();
@@ -12,7 +18,23 @@ export function ProfilePage() {
   const location = useLocation() as { state?: { from?: string } };
   const { isConnected } = useAccount();
   const [editing, setEditing] = useState(false);
+  const [pendingOAuthProof, setPendingOAuthProof] =
+    useState<PendingOAuthProof | null>(null);
   const hasUnsaved = useRef(false);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem(PENDING_OAUTH_PROOF_KEY);
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as PendingOAuthProof;
+      if (parsed?.platform && parsed?.result) {
+        sessionStorage.removeItem(PENDING_OAUTH_PROOF_KEY);
+        setPendingOAuthProof(parsed);
+      }
+    } catch {
+      sessionStorage.removeItem(PENDING_OAUTH_PROOF_KEY);
+    }
+  }, []);
 
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -94,6 +116,8 @@ export function ProfilePage() {
             name={ensName}
             editing={editing}
             onDirtyStateChange={(dirty) => (hasUnsaved.current = dirty)}
+            pendingOAuthProof={pendingOAuthProof}
+            onConsumePendingOAuthProof={() => setPendingOAuthProof(null)}
           />
         </section>
       </main>

@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import type { RecordKey } from "../config/platforms";
 import { RECORD_KEYS } from "../config/platforms";
+import type { PendingOAuthProof } from "../pages/AuthCallbackPage";
 import { labelForKey } from "../features/records/validators";
 import { useRecordText } from "../features/records/useRecordText";
 import { Modal } from "../components/Modal";
@@ -19,10 +20,14 @@ export function RecordsList({
   name,
   editing = false,
   onDirtyStateChange,
+  pendingOAuthProof,
+  onConsumePendingOAuthProof,
 }: {
   name: string;
   editing?: boolean;
   onDirtyStateChange?: (hasChanges: boolean) => void;
+  pendingOAuthProof?: PendingOAuthProof | null;
+  onConsumePendingOAuthProof?: () => void;
 }) {
   const itemHandles = useRef<Record<RecordKey, RecordItemHandle | null>>(
     {} as Record<RecordKey, RecordItemHandle | null>,
@@ -121,6 +126,8 @@ export function RecordsList({
             textKey={key}
             editing={editing}
             onDirtyChange={onDirtyChange}
+            pendingOAuthProof={pendingOAuthProof}
+            onConsumePendingOAuthProof={onConsumePendingOAuthProof}
           />
         ))}
       </ul>
@@ -140,10 +147,22 @@ type RecordItemProps = {
   textKey: RecordKey;
   editing: boolean;
   onDirtyChange: (key: RecordKey, isDirty: boolean) => void;
+  pendingOAuthProof?: PendingOAuthProof | null;
+  onConsumePendingOAuthProof?: () => void;
 };
 
 const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
-  function RecordItem({ name, textKey, editing, onDirtyChange }, ref) {
+  function RecordItem(
+    {
+      name,
+      textKey,
+      editing,
+      onDirtyChange,
+      pendingOAuthProof,
+      onConsumePendingOAuthProof,
+    },
+    ref,
+  ) {
     const {
       value,
       originalValue,
@@ -184,6 +203,23 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
       onDirtyChange(textKey, !isUnchanged);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isUnchanged]);
+
+    // When returning from OAuth callback with a proof, inject it and open the modal
+    useEffect(() => {
+      if (
+        !pendingOAuthProof ||
+        !platform?.verifiable ||
+        platform.key !== pendingOAuthProof.platform
+      )
+        return;
+      const hook = proofHook as { setResult?: (r: unknown) => void };
+      if (hook.setResult) {
+        hook.setResult(pendingOAuthProof.result);
+        setOpenProofModal(true);
+        onConsumePendingOAuthProof?.();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pendingOAuthProof]);
 
     useImperativeHandle(ref, () => ({
       async saveIfDirty() {
@@ -386,6 +422,9 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
               estimatedDurationMs={platform.estimatedProveDurationMs ?? 10_000}
               buildCommand={platform.buildCommand ?? (() => "")}
               hook={proofHook}
+              platformKey={platform.key}
+              blueprintSlug={platform.blueprintSlug}
+              gmailQuery={platform.gmailQuery}
             />
           ) : null}
         </div>
