@@ -6,9 +6,9 @@
     "urlTemplate": "https://x.com/{handle}",
     "displayPrefix": "@",
     "verifiable": true,
-    "blueprintSlug": "benceharomi/X_HANDLE@v2",
+    "blueprintSlug": "benceharomi/x_handle@v1",
     "commandTemplate": "Link my x handle to {ensName}",
-    "verifierAddress": "0x8d7C85b92263DC99fAd2a43e1c80438eE7d84818",
+    "verifierAddress": "0x265DC105B710B3dEBd8A084f1e117e152626E1b8",
     "estimatedProveDurationMs": 10000
   },
   {
