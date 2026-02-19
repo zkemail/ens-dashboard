@@ -139,5 +139,6 @@ export function useProof(platform: PlatformConfig) {
     run,
     submit,
     reset,
+    setResult,
   } as const;
 }

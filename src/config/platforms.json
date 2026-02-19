@@ -8,6 +8,7 @@
     "verifiable": true,
     "blueprintSlug": "benceharomi/x_handle@v1",
     "commandTemplate": "Link my x handle to {ensName}",
+    "gmailQuery": "from:info@x.com subject:\"Password reset request\"",
     "verifierAddress": "0x265DC105B710B3dEBd8A084f1e117e152626E1b8",
     "estimatedProveDurationMs": 10000
   },
