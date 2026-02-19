@@ -34,9 +34,9 @@
     "urlTemplate": "https://discord.com/users/{handle}",
     "displayPrefix": "@",
     "verifiable": true,
-    "blueprintSlug": "zkemail/discord_handle@v1",
+    "blueprintSlug": "zkemail/discord_2@v1",
     "commandTemplate": "Link my Discord handle to {ensName}",
-    "verifierAddress": "0x0000000000000000000000000000000000000000",
+    "verifierAddress": "0x3BFCF7604AD737d5a151434B6495ec551Aae054e",
     "estimatedProveDurationMs": 100000
   }
 ]
