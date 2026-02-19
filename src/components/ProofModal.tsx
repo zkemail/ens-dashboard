@@ -171,7 +171,6 @@ export function ProofModal({
   useEffect(() => {
     if (hasSubmitted) {
       onSubmitted?.();
-      reset();
       setFile(null);
       setIsDragOver(false);
       onClose();
@@ -319,7 +318,8 @@ export function ProofModal({
         {hasSubmitted ? (
           <div className="help-text" role="status">
             Transaction submitted. Once it's verified on-chain, your profile
-            will show Verified after a refresh. No further action is needed.
+            will automatically show Verified after confirmation. This may take
+            a minute or two depending on network conditions.
           </div>
         ) : null}
       </div>
