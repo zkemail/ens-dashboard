@@ -10,11 +10,12 @@ import { sepolia } from "wagmi/chains";
 import { namehash } from "viem/ens";
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { RecordKey } from "./constants";
+import type { RecordKey } from "../../config/platforms";
 import { normalizeValueForKey, validateValueForKey } from "./validators";
 import { setTextAbi, textRecordVerifierAbi } from "./abi";
 import { CONTRACTS } from "../../config/contracts";
 import { VERIFY_COMMAND_ENDPOINT } from "../../config/env";
+import { getPlatform, isPlatformVerifiable } from "../../config/platforms";
 
 export function useRecordText(name: string, key: RecordKey) {
   const { chainId } = useAccount();
@@ -37,16 +38,18 @@ export function useRecordText(name: string, key: RecordKey) {
   const [justSaved, setJustSaved] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const isVerifiable = ["email", "com.twitter"].includes(key);
+  const platform = getPlatform(key);
+  const isVerifiable = key === "email" || isPlatformVerifiable(key);
+
+  const verifierAddress = useMemo(() => {
+    if (key === "email") return CONTRACTS.sepolia.linkEmailVerifier;
+    if (platform) return platform.verifierAddress;
+    return undefined;
+  }, [key, platform]);
 
   const node = useMemo(() => namehash(name), [name]);
   const { data: verifiedData, isLoading: isVerifying } = useReadContract({
-    address:
-      key === "email"
-        ? CONTRACTS.sepolia.linkEmailVerifier
-        : key === "com.twitter"
-        ? CONTRACTS.sepolia.linkXHandleVerifier
-        : undefined,
+    address: verifierAddress,
     abi: textRecordVerifierAbi,
     functionName: "verifyTextRecord",
     args: [node, key, data ?? ""],
@@ -106,12 +109,7 @@ export function useRecordText(name: string, key: RecordKey) {
   const [verifyRequesting, setVerifyRequesting] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const { refetch: refetchVerification } = useReadContract({
-    address:
-      key === "email"
-        ? CONTRACTS.sepolia.linkEmailVerifier
-        : key === "com.twitter"
-        ? CONTRACTS.sepolia.linkXHandleVerifier
-        : undefined,
+    address: verifierAddress,
     abi: textRecordVerifierAbi,
     functionName: "verifyTextRecord",
     args: [node, key, data ?? ""],
@@ -162,7 +160,7 @@ export function useRecordText(name: string, key: RecordKey) {
       setVerifyRequested(true);
     } catch (err) {
       setVerifyError(
-        err instanceof Error ? err.message : "Verification failed"
+        err instanceof Error ? err.message : "Verification failed",
       );
     } finally {
       setVerifyRequesting(false);

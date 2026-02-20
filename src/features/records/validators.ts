@@ -1,7 +1,16 @@
-import type { RecordKey } from "./constants";
+import type { RecordKey } from "../../config/platforms";
+import { getPlatform } from "../../config/platforms";
 
-export function normalizeValueForKey(key: RecordKey, raw: string): string {
+export function normalizeValueForKey(
+  key: RecordKey | string,
+  raw: string,
+): string {
   const value = (raw || "").trim();
+
+  // Check platform config first
+  const platform = getPlatform(key);
+  if (platform?.normalize) return platform.normalize(value);
+
   switch (key) {
     case "email":
       return value.toLowerCase();
@@ -10,22 +19,21 @@ export function normalizeValueForKey(key: RecordKey, raw: string): string {
       const hasProtocol = /^https?:\/\//i.test(value);
       return hasProtocol ? value : `https://${value}`;
     }
-    case "com.twitter":
-    case "com.github":
-    case "org.telegram": {
-      const handle = value.replace(/^@+/, "").trim();
-      return handle;
-    }
     default:
       return value;
   }
 }
 
 export function validateValueForKey(
-  key: RecordKey,
-  value: string
+  key: RecordKey | string,
+  value: string,
 ): string | null {
-  if (!value) return null; // allow clearing
+  if (!value) return null;
+
+  // Check platform config first
+  const platform = getPlatform(key);
+  if (platform?.validate) return platform.validate(value);
+
   switch (key) {
     case "email": {
       const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -39,26 +47,13 @@ export function validateValueForKey(
         return "Enter a valid URL";
       }
     }
-    case "com.twitter":
-    case "com.github":
-    case "org.telegram": {
-      const ok = /^[A-Za-z0-9_.]{1,30}$/.test(value);
-      return ok ? null : "Use letters, numbers, '_' or '.'";
-    }
     default:
       return null;
   }
 }
 
-export function labelForKey(key: RecordKey): string {
-  switch (key) {
-    case "com.twitter":
-      return "X";
-    case "com.github":
-      return "GitHub";
-    case "org.telegram":
-      return "Telegram";
-    default:
-      return key;
-  }
+export function labelForKey(key: RecordKey | string): string {
+  const platform = getPlatform(key);
+  if (platform) return platform.label;
+  return key;
 }
