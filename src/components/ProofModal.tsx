@@ -167,16 +167,10 @@ export function ProofModal({
     onClose();
   };
 
-  // Notify parent and auto-close when submission succeeds
+  // Notify parent when submission succeeds
   useEffect(() => {
-    if (hasSubmitted) {
-      onSubmitted?.();
-      setFile(null);
-      setIsDragOver(false);
-      onClose();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSubmitted]);
+    if (hasSubmitted) onSubmitted?.();
+  }, [hasSubmitted, onSubmitted]);
 
   const isBusy = isLoading || isSubmitting;
   const currentStepLabel = stepLabel(step);
@@ -318,8 +312,8 @@ export function ProofModal({
         {hasSubmitted ? (
           <div className="help-text" role="status">
             Transaction submitted. Once it's verified on-chain, your profile
-            will automatically show Verified after confirmation. This may take
-            a minute or two depending on network conditions.
+            will automatically show Verified after confirmation. This may take a
+            minute or two depending on network conditions.
           </div>
         ) : null}
       </div>
