@@ -275,6 +275,12 @@ export function ProofModal({
             if (dropped) setFile(dropped);
           }}
           onClick={() => ensName && inputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (!ensName) return;
+            if (e.key !== "Enter" && e.key !== " ") return;
+            if (e.key === " ") e.preventDefault();
+            inputRef.current?.click();
+          }}
           role="button"
           tabIndex={0}
           style={{
