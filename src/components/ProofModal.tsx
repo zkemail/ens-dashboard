@@ -101,6 +101,8 @@ export function ProofModal({
   const [progress, setProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const startRef = useRef<number | null>(null);
+  const onSubmittedRef = useRef(onSubmitted);
+  onSubmittedRef.current = onSubmitted;
 
   // Half-life calibrated so that at t = estimatedDurationMs the bar reaches ~95 %.
   // Formula: progress = 100 * (1 - 0.5^(t / halfLife))
@@ -168,10 +170,10 @@ export function ProofModal({
     onClose();
   };
 
-  // Notify parent when submission succeeds
+  // Notify parent when submission succeeds (ref avoids re-running when parent passes unstable callback)
   useEffect(() => {
-    if (hasSubmitted) onSubmitted?.();
-  }, [hasSubmitted, onSubmitted]);
+    if (hasSubmitted) onSubmittedRef.current?.();
+  }, [hasSubmitted]);
 
   const isBusy = isLoading || isSubmitting;
   const currentStepLabel = stepLabel(step);
