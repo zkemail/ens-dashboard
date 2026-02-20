@@ -118,9 +118,10 @@ export function ProofModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Auto-generate on file selection/drop
+  // Auto-generate on file selection/drop (only when ENS name is set)
   useEffect(() => {
     if (!file) return;
+    if (!ensName) return;
     if (isLoading) return;
     // Reset previous proof state so a new generation can start
     if (result) {
@@ -128,7 +129,7 @@ export function ProofModal({
       setProgress(0);
       startRef.current = null;
     }
-    run(file, buildCommand(ensName ?? ""));
+    run(file, buildCommand(ensName));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file]);
 
@@ -190,8 +191,10 @@ export function ProofModal({
           {!result ? (
             <button
               className="nav-cta"
-              onClick={() => file && run(file, buildCommand(ensName ?? ""))}
-              disabled={!file || isLoading}
+              onClick={() =>
+                file && ensName ? run(file, buildCommand(ensName)) : undefined
+              }
+              disabled={!file || isLoading || !ensName}
             >
               {isLoading ? "Generating…" : "Generate proof"}
             </button>
@@ -259,6 +262,7 @@ export function ProofModal({
         </ol>
         <div
           onDragOver={(e) => {
+            if (!ensName) return;
             e.preventDefault();
             setIsDragOver(true);
           }}
@@ -266,10 +270,11 @@ export function ProofModal({
           onDrop={(e) => {
             e.preventDefault();
             setIsDragOver(false);
+            if (!ensName) return;
             const dropped = e.dataTransfer.files?.[0];
             if (dropped) setFile(dropped);
           }}
-          onClick={() => inputRef.current?.click()}
+          onClick={() => ensName && inputRef.current?.click()}
           role="button"
           tabIndex={0}
           style={{
@@ -278,7 +283,8 @@ export function ProofModal({
             padding: 16,
             textAlign: "center",
             background: isDragOver ? "#0b1020" : "transparent",
-            cursor: "pointer",
+            cursor: ensName ? "pointer" : "not-allowed",
+            opacity: ensName ? undefined : 0.6,
           }}
         >
           <div className="help-text" style={{ marginBottom: 8 }}>
@@ -291,7 +297,7 @@ export function ProofModal({
             className="link-cta"
             onClick={(e) => {
               e.stopPropagation();
-              inputRef.current?.click();
+              if (ensName) inputRef.current?.click();
             }}
           >
             Choose file
