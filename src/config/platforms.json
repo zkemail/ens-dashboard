@@ -15,7 +15,6 @@
     "key": "com.discord",
     "label": "Discord",
     "placeholder": "username",
-    "displayPrefix": "@",
     "verifiable": true,
     "blueprintSlug": "zkemail/discord_2@v1",
     "commandTemplate": "Link my Discord handle to {ensName}",
@@ -27,7 +26,6 @@
     "label": "GitHub",
     "placeholder": "username",
     "urlTemplate": "https://github.com/{handle}",
-    "displayPrefix": "@",
     "verifiable": false
   },
   {
@@ -35,7 +33,6 @@
     "label": "Telegram",
     "placeholder": "username",
     "urlTemplate": "https://t.me/{handle}",
-    "displayPrefix": "@",
     "verifiable": false
   }
 ]

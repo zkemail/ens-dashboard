@@ -315,20 +315,13 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
               ) : null}
             </>
           ) : (
-            <div className="record-value">
-              {renderValue(textKey, viewValue)}
-              {isVerifiable && viewValue ? (
-                <span
-                  className="help-text"
-                  style={{
-                    marginLeft: 8,
-                    color: isVerified ? "#16a34a" : "#ef4444",
-                  }}
-                >
-                  {isVerified ? "Verified" : "Not verified"}
-                </span>
-              ) : null}
-            </div>
+            <RecordValueDisplay
+              key={textKey}
+              textKey={textKey}
+              value={viewValue}
+              isVerifiable={isVerifiable}
+              isVerified={isVerified}
+            />
           )}
           {/* Email verification modal */}
           <Modal
@@ -394,7 +387,71 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
   },
 );
 
-function renderValue(key: RecordKey, value: string) {
+function RecordValueDisplay({
+  textKey,
+  value,
+  isVerifiable,
+  isVerified,
+}: {
+  textKey: RecordKey;
+  value: string;
+  isVerifiable: boolean;
+  isVerified: boolean;
+}) {
+  const [copied, setCopied] = React.useState(false);
+
+  const handleCopy = async (text: string) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Swallow copy errors; user can still manually select text.
+    }
+  };
+
+  const content = renderValue(textKey, value, {
+    copied,
+    onCopy: handleCopy,
+  });
+
+  if (!content) return null;
+
+  return (
+    <div className="record-value">
+      {content}
+      {isVerifiable && value ? (
+        <span
+          className="help-text"
+          style={{
+            marginLeft: 8,
+            color: isVerified ? "#16a34a" : "#ef4444",
+          }}
+        >
+          {isVerified ? "Verified" : "Not verified"}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function renderValue(
+  key: RecordKey,
+  value: string,
+  opts?: { copied: boolean; onCopy: (text: string) => void },
+) {
   const textStyle: React.CSSProperties = {
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -412,8 +469,30 @@ function renderValue(key: RecordKey, value: string) {
       : handle;
     return (
       <a href={href} className="pill-link" target="_blank" rel="noreferrer">
-        {display}
+        <span>{display}</span>
+        <span style={{ marginLeft: 6 }}>↗</span>
       </a>
+    );
+  }
+
+  if (platform && !platform.formatUrl && opts) {
+    const handle = value.replace(/^@/, "");
+    const display = platform.displayPrefix
+      ? `${platform.displayPrefix}${handle}`
+      : handle;
+    const icon = opts.copied ? "✓" : "⧉";
+    const label = opts.copied ? "Copied" : "Copy to clipboard";
+    return (
+      <button
+        type="button"
+        className="pill-link"
+        onClick={() => opts.onCopy(value)}
+        title={label}
+        style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+      >
+        <span>{display}</span>
+        <span aria-hidden>{icon}</span>
+      </button>
     );
   }
 
