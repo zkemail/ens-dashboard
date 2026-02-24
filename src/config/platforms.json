@@ -4,6 +4,7 @@
     "label": "X",
     "placeholder": "username",
     "urlTemplate": "https://x.com/{handle}",
+    "icon": "x-logo.svg",
     "displayPrefix": "@",
     "verifiable": true,
     "blueprintSlug": "benceharomi/x_handle@v1",
@@ -12,11 +13,22 @@
     "estimatedProveDurationMs": 10000
   },
   {
+    "key": "com.discord",
+    "label": "Discord",
+    "placeholder": "username",
+    "icon": "discord-logo.svg",
+    "verifiable": true,
+    "blueprintSlug": "zkemail/discord_2@v1",
+    "commandTemplate": "Link my Discord handle to {ensName}",
+    "verifierAddress": "0x3BFCF7604AD737d5a151434B6495ec551Aae054e",
+    "estimatedProveDurationMs": 100000
+  },
+  {
     "key": "com.github",
     "label": "GitHub",
     "placeholder": "username",
     "urlTemplate": "https://github.com/{handle}",
-    "displayPrefix": "@",
+    "icon": "github-logo.svg",
     "verifiable": false
   },
   {
@@ -24,7 +36,7 @@
     "label": "Telegram",
     "placeholder": "username",
     "urlTemplate": "https://t.me/{handle}",
-    "displayPrefix": "@",
+    "icon": "telegram-logo.svg",
     "verifiable": false
   }
 ]
