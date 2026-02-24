@@ -461,6 +461,12 @@ function renderValue(
 
   // Dynamic platform rendering
   const platform = getPlatform(key);
+  const logoSrc = platform?.icon
+    ? platform.icon.startsWith("/")
+      ? platform.icon
+      : `/${platform.icon}`
+    : undefined;
+
   if (platform?.formatUrl) {
     const handle = value.replace(/^@/, "");
     const href = platform.formatUrl(handle);
@@ -468,7 +474,22 @@ function renderValue(
       ? `${platform.displayPrefix}${handle}`
       : handle;
     return (
-      <a href={href} className="pill-link" target="_blank" rel="noreferrer">
+      <a
+        href={href}
+        className="pill-link"
+        target="_blank"
+        rel="noreferrer"
+        style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+      >
+        {logoSrc ? (
+          <img
+            src={logoSrc}
+            alt={`${platform.label} logo`}
+            width={14}
+            height={14}
+            style={{ display: "block" }}
+          />
+        ) : null}
         <span>{display}</span>
         <span style={{ marginLeft: 6 }}>↗</span>
       </a>
@@ -490,6 +511,15 @@ function renderValue(
         title={label}
         style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
       >
+        {logoSrc ? (
+          <img
+            src={logoSrc}
+            alt={`${platform.label} logo`}
+            width={14}
+            height={14}
+            style={{ display: "block" }}
+          />
+        ) : null}
         <span>{display}</span>
         <span aria-hidden>{icon}</span>
       </button>

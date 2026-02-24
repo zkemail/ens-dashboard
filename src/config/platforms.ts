@@ -8,6 +8,7 @@ export interface PlatformConfigData {
   placeholder: string;
   urlTemplate?: string;
   displayPrefix?: string;
+  icon?: string;
   verifiable: boolean;
   blueprintSlug?: string;
   commandTemplate?: string;
@@ -30,6 +31,7 @@ export interface PlatformConfig {
   validate?: (value: string) => string | null;
   formatUrl?: (handle: string) => string;
   displayPrefix?: string;
+  icon?: string;
 }
 
 const handleNormalize = (raw: string) => raw.replace(/^@+/, "").trim();
@@ -59,6 +61,7 @@ export const PLATFORMS: PlatformConfig[] = platformsData.map((d) => {
     placeholder: d.placeholder,
     verifiable: d.verifiable,
     displayPrefix: d.displayPrefix,
+    icon: d.icon,
   };
 
   if (d.verifiable) {
