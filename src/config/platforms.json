@@ -15,7 +15,6 @@
     "key": "com.discord",
     "label": "Discord",
     "placeholder": "username",
-    "urlTemplate": "https://discord.com/users/{handle}",
     "displayPrefix": "@",
     "verifiable": true,
     "blueprintSlug": "zkemail/discord_2@v1",
