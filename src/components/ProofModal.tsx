@@ -164,10 +164,10 @@ export function ProofModal({
   // Solving for 95 %:  halfLife = estimatedDuration / (log(20) / log(2)) ≈ est / 4.32
   const halfLifeMs = estimatedDurationMs / 4.32;
 
-  // Ensure fresh state whenever the modal opens
+  // Ensure fresh state whenever the modal opens, but preserve preloaded OAuth proofs
   useEffect(() => {
     if (!open) return;
-    reset();
+    if (!result) reset();
     setFile(null);
     setUseGoogleAuth(false);
     setIsDragOver(false);
@@ -364,11 +364,12 @@ export function ProofModal({
             <button
               type="button"
               onClick={() => {
-                const command = buildCommand(ensName ?? "");
+                if (!ensName) return;
+                const command = buildCommand(ensName);
                 sessionStorage.setItem(OAUTH_PLATFORM_KEY, platformKey!);
                 sessionStorage.setItem(
                   OAUTH_RETURN_PATH_KEY,
-                  `/name/${encodeURIComponent(ensName ?? "")}`,
+                  `/name/${encodeURIComponent(ensName)}`,
                 );
                 const callbackUrl = `${window.location.origin}/auth/callback`;
                 const params = new URLSearchParams({

@@ -56,7 +56,8 @@ export function AuthCallbackPage() {
     };
 
     if (errorParam) {
-      setError(decodeURIComponent(errorParam));
+      const raw = decodeURIComponent(errorParam);
+      setError(raw.replace(/[\x00-\x1F<>]/g, "").slice(0, 200));
       setStatus("error");
       const returnPath =
         sessionStorage.getItem(OAUTH_RETURN_PATH_KEY) || "/";
@@ -94,9 +95,13 @@ export function AuthCallbackPage() {
     }
 
     let cancelled = false;
+    const abortController = new AbortController();
+    const fetchTimeout = setTimeout(() => abortController.abort(), 30_000);
     (async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/proof/${proofId}`);
+        const response = await fetch(`${BACKEND_URL}/proof/${proofId}`, {
+          signal: abortController.signal,
+        });
         if (cancelled) return;
         if (!response.ok) {
           const errText = await response.text();
@@ -118,15 +123,21 @@ export function AuthCallbackPage() {
         navigate(returnPath, { replace: true });
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Failed to fetch proof");
+        const raw = e instanceof Error ? e.message : "Failed to fetch proof";
+        const sanitized = raw.replace(/[\x00-\x1F<>]/g, "").slice(0, 200);
+        setError(sanitized);
         setStatus("error");
         sessionStorage.removeItem(OAUTH_RETURN_PATH_KEY);
         sessionStorage.removeItem(OAUTH_PLATFORM_KEY);
         scheduleRedirect(returnPath);
+      } finally {
+        clearTimeout(fetchTimeout);
       }
     })();
     return () => {
       cancelled = true;
+      abortController.abort();
+      clearTimeout(fetchTimeout);
       if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current);
     };
   }, [searchParams, navigate]);
