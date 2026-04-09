@@ -20,7 +20,6 @@ interface BackendProofResponse {
   success: boolean;
   proof?: Hex[];
   publicInputs?: Hex[];
-  email?: { raw: string };
   handle?: string;
   error?: string;
 }

@@ -376,7 +376,6 @@ export function ProofModal({
                   blueprint: blueprintSlug!,
                   command,
                   redirect_uri: callbackUrl,
-                  return_to: callbackUrl, // Some backends use return_to instead
                 });
                 window.location.href = `${BACKEND_URL}/gmail/auth?${params.toString()}`;
               }}
@@ -414,6 +413,7 @@ export function ProofModal({
         ) : (
           <div
             onDragOver={(e) => {
+              if (!ensName) return;
               e.preventDefault();
               setIsDragOver(true);
             }}
@@ -421,10 +421,11 @@ export function ProofModal({
             onDrop={(e) => {
               e.preventDefault();
               setIsDragOver(false);
+              if (!ensName) return;
               const dropped = e.dataTransfer.files?.[0];
               if (dropped) setFile(dropped);
             }}
-            onClick={() => inputRef.current?.click()}
+            onClick={() => ensName && inputRef.current?.click()}
             role="button"
             tabIndex={0}
             style={{
@@ -433,7 +434,8 @@ export function ProofModal({
               padding: 16,
               textAlign: "center",
               background: isDragOver ? "#0b1020" : "transparent",
-              cursor: "pointer",
+              cursor: ensName ? "pointer" : "not-allowed",
+              opacity: ensName ? undefined : 0.6,
             }}
           >
             <div className="help-text" style={{ marginBottom: 8 }}>
