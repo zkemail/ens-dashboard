@@ -57,7 +57,7 @@ export function AuthCallbackPage() {
 
     if (errorParam) {
       const raw = decodeURIComponent(errorParam);
-      setError(raw.replace(/[\x00-\x1F<>]/g, "").slice(0, 200));
+      setError(raw.replace(/[\u0000-\u001F<>]/g, "").slice(0, 200));
       setStatus("error");
       const returnPath =
         sessionStorage.getItem(OAUTH_RETURN_PATH_KEY) || "/";
@@ -124,7 +124,7 @@ export function AuthCallbackPage() {
       } catch (e) {
         if (cancelled) return;
         const raw = e instanceof Error ? e.message : "Failed to fetch proof";
-        const sanitized = raw.replace(/[\x00-\x1F<>]/g, "").slice(0, 200);
+        const sanitized = raw.replace(/[\u0000-\u001F<>]/g, "").slice(0, 200);
         setError(sanitized);
         setStatus("error");
         sessionStorage.removeItem(OAUTH_RETURN_PATH_KEY);

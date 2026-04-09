@@ -56,7 +56,7 @@ export function useProof(platform: PlatformConfig) {
         setIsLoading(false);
       }
     },
-    [step, platform.blueprintSlug, platform.label],
+    [step, platform.blueprintSlug, platform.label, platform.verifiable],
   );
 
   const submit = useCallback(async () => {
@@ -107,6 +107,7 @@ export function useProof(platform: PlatformConfig) {
     step,
     platform.verifierAddress,
     platform.label,
+    platform.verifiable,
   ]);
 
   const json = useMemo(
