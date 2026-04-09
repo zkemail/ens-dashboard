@@ -213,12 +213,14 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
       )
         return;
       const r = pendingOAuthProof.result as Record<string, unknown> | null;
-      const proofProps = r && typeof r === "object"
-        ? (r.proof as Record<string, unknown> | undefined)?.props as Record<string, unknown> | undefined
-        : undefined;
+      const proofProps =
+        r && typeof r === "object"
+          ? ((r.proof as Record<string, unknown> | undefined)?.props as
+              | Record<string, unknown>
+              | undefined)
+          : undefined;
       const isValidShape =
-        proofProps?.proofData &&
-        Array.isArray(proofProps?.publicOutputs);
+        proofProps?.proofData && Array.isArray(proofProps?.publicOutputs);
       if (!isValidShape) {
         onConsumePendingOAuthProof?.();
         return;

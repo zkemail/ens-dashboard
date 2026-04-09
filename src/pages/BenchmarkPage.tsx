@@ -70,7 +70,8 @@ export function BenchmarkPage() {
         <section className="container hero">
           <h1 className="title">Proof Generation Benchmark</h1>
           <p className="subtitle">
-            Benchmark local Noir proof generation performance using X/Twitter emails
+            Benchmark local Noir proof generation performance using X/Twitter
+            emails
           </p>
 
           <div
@@ -103,7 +104,8 @@ export function BenchmarkPage() {
                   color: "var(--muted)",
                 }}
               >
-                Use any X/Twitter email (e.g., password reset, verification, notifications)
+                Use any X/Twitter email (e.g., password reset, verification,
+                notifications)
               </p>
               <div
                 onDragOver={handleDragOver}
@@ -247,12 +249,20 @@ export function BenchmarkPage() {
                     runBenchmark(file, command, numRuns);
                   }
                 }}
-                disabled={!file || isRunning || !command.trim() || numRuns === ""}
+                disabled={
+                  !file || isRunning || !command.trim() || numRuns === ""
+                }
                 style={{
                   width: "100%",
                   height: "44px",
-                  opacity: !file || isRunning || !command.trim() || numRuns === "" ? 0.5 : 1,
-                  cursor: !file || isRunning || !command.trim() || numRuns === "" ? "not-allowed" : "pointer",
+                  opacity:
+                    !file || isRunning || !command.trim() || numRuns === ""
+                      ? 0.5
+                      : 1,
+                  cursor:
+                    !file || isRunning || !command.trim() || numRuns === ""
+                      ? "not-allowed"
+                      : "pointer",
                 }}
               >
                 {isRunning
