@@ -41,7 +41,9 @@ export function AuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<"loading" | "error" | "success">("loading");
+  const [status, setStatus] = useState<"loading" | "error" | "success">(
+    "loading",
+  );
   const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -57,28 +59,31 @@ export function AuthCallbackPage() {
 
     if (errorParam) {
       const raw = decodeURIComponent(errorParam);
-      setError(raw.replace(/[\x00-\x1F<>]/g, "").slice(0, 200));
+      setError(
+        // eslint-disable-next-line no-control-regex
+        raw.replace(/[\u0000-\u001F<>]/g, "").slice(0, 200),
+      );
       setStatus("error");
-      const returnPath =
-        sessionStorage.getItem(OAUTH_RETURN_PATH_KEY) || "/";
+      const returnPath = sessionStorage.getItem(OAUTH_RETURN_PATH_KEY) || "/";
       sessionStorage.removeItem(OAUTH_RETURN_PATH_KEY);
       sessionStorage.removeItem(OAUTH_PLATFORM_KEY);
       scheduleRedirect(returnPath);
       return () => {
-        if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current);
+        if (redirectTimeoutRef.current)
+          clearTimeout(redirectTimeoutRef.current);
       };
     }
 
     if (!proofId) {
       setError("No proof ID received from authentication");
       setStatus("error");
-      const returnPath =
-        sessionStorage.getItem(OAUTH_RETURN_PATH_KEY) || "/";
+      const returnPath = sessionStorage.getItem(OAUTH_RETURN_PATH_KEY) || "/";
       sessionStorage.removeItem(OAUTH_RETURN_PATH_KEY);
       sessionStorage.removeItem(OAUTH_PLATFORM_KEY);
       scheduleRedirect(returnPath);
       return () => {
-        if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current);
+        if (redirectTimeoutRef.current)
+          clearTimeout(redirectTimeoutRef.current);
       };
     }
 
@@ -90,7 +95,8 @@ export function AuthCallbackPage() {
       setStatus("error");
       scheduleRedirect(returnPath);
       return () => {
-        if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current);
+        if (redirectTimeoutRef.current)
+          clearTimeout(redirectTimeoutRef.current);
       };
     }
 
@@ -105,7 +111,9 @@ export function AuthCallbackPage() {
         if (cancelled) return;
         if (!response.ok) {
           const errText = await response.text();
-          throw new Error(errText || `Failed to fetch proof (${response.status})`);
+          throw new Error(
+            errText || `Failed to fetch proof (${response.status})`,
+          );
         }
         const data: BackendProofResponse = await response.json();
         if (cancelled) return;
@@ -124,7 +132,8 @@ export function AuthCallbackPage() {
       } catch (e) {
         if (cancelled) return;
         const raw = e instanceof Error ? e.message : "Failed to fetch proof";
-        const sanitized = raw.replace(/[\x00-\x1F<>]/g, "").slice(0, 200);
+        const sanitized = // eslint-disable-next-line no-control-regex
+          raw.replace(/[\u0000-\u001F<>]/g, "").slice(0, 200);
         setError(sanitized);
         setStatus("error");
         sessionStorage.removeItem(OAUTH_RETURN_PATH_KEY);

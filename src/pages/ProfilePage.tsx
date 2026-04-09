@@ -100,7 +100,7 @@ export function ProfilePage() {
                 onClick={() => {
                   if (editing && hasUnsaved.current) {
                     const ok = confirm(
-                      "You have unsaved changes. Leave edit mode and discard them?"
+                      "You have unsaved changes. Leave edit mode and discard them?",
                     );
                     if (!ok) return;
                   }

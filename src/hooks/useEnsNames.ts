@@ -59,7 +59,7 @@ function getChainFromId(chainId?: number): typeof sepolia | undefined {
 async function resolveNameFromNamehash(
   publicClient: ReturnType<typeof createPublicClient>,
   registryAddress: `0x${string}`,
-  namehash: `0x${string}`
+  namehash: `0x${string}`,
 ): Promise<string | null> {
   try {
     // Get resolver address
@@ -100,7 +100,7 @@ function getRpcUrl(): string {
 }
 
 async function getAllEnsNamesViaRpc(
-  address: `0x${string}`
+  address: `0x${string}`,
 ): Promise<EnsNameInfo[]> {
   const rpcUrl = getRpcUrl();
   const publicClient = createPublicClient({
@@ -219,7 +219,7 @@ async function getAllEnsNamesViaRpc(
             const resolvedName = await resolveNameFromNamehash(
               publicClient,
               registryAddress,
-              namehashValue
+              namehashValue,
             );
 
             // If we can't resolve, we'll still include it with namehash as identifier

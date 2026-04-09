@@ -35,7 +35,7 @@ export function HomePage() {
 
     if (ensName) {
       const idx = all.findIndex(
-        (n) => n.toLowerCase() === ensName.toLowerCase()
+        (n) => n.toLowerCase() === ensName.toLowerCase(),
       );
       if (idx !== -1) all.splice(idx, 1);
     }
