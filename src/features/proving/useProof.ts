@@ -128,6 +128,13 @@ export function useProof(platform: PlatformConfig) {
     setStep("");
   }, []);
 
+  const injectResult = useCallback((proofResult: ProofResult) => {
+    setIsLoading(false);
+    setError(null);
+    setStep("");
+    setResult(proofResult);
+  }, []);
+
   return {
     isLoading,
     isSubmitting,
@@ -139,5 +146,6 @@ export function useProof(platform: PlatformConfig) {
     run,
     submit,
     reset,
+    setResult: injectResult,
   } as const;
 }
