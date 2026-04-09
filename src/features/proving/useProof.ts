@@ -99,7 +99,15 @@ export function useProof(platform: PlatformConfig) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [result, publicClient, writeContractAsync, queryClient, step, platform.verifierAddress, platform.label]);
+  }, [
+    result,
+    publicClient,
+    writeContractAsync,
+    queryClient,
+    step,
+    platform.verifierAddress,
+    platform.label,
+  ]);
 
   const json = useMemo(
     () => (result ? JSON.stringify(result, null, 2) : ""),
@@ -128,7 +136,7 @@ export function useProof(platform: PlatformConfig) {
     setStep("");
   }, []);
 
-  const injectResult = useCallback((proofResult: ProofResult) => {
+  const injectResult = useCallback((proofResult: ProofResult | null) => {
     setIsLoading(false);
     setError(null);
     setStep("");
