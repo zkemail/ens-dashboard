@@ -1,16 +1,37 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Buffer as BufferPolyfill } from "buffer";
 import { usePublicClient, useWriteContract } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
 import { entrypointAbi } from "../records/abi";
-import { remoteProve } from "./remoteProve";
-import type { PlatformConfig } from "../../config/platforms";
+import { CONTRACTS } from "../../config/contracts";
+
+// Browser polyfills for libs expecting Node-like globals
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).numberIsNaN ??= Number.isNaN;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).Buffer ??= BufferPolyfill;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).process ??= { env: {} };
+// Ensure NODE_ENV is a string. Some deps call process.env.NODE_ENV.slice()
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const __proc: any = (globalThis as any).process;
+__proc.env ??= {};
+if (typeof __proc.env.NODE_ENV !== "string") {
+  __proc.env.NODE_ENV = "development";
+}
+// Some libs call process.version.slice or read versions.node
+__proc.version ??= "v18.0.0";
+__proc.versions ??= {};
+if (typeof __proc.versions.node !== "string") {
+  __proc.versions.node = "18.0.0";
+}
 
 type ProofResult = {
   proof: unknown;
   verification: unknown;
 };
 
-export function useProof(platform: PlatformConfig) {
+export function useTwitterProof() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,10 +44,6 @@ export function useProof(platform: PlatformConfig) {
 
   const run = useCallback(
     async (emlFile: File, command: string) => {
-      if (!platform.verifiable || !platform.blueprintSlug) {
-        setError("This platform does not support proof verification.");
-        return;
-      }
       setIsLoading(true);
       setError(null);
       setResult(null);
@@ -36,34 +53,56 @@ export function useProof(platform: PlatformConfig) {
         if (!fileOk) throw new Error("File must be a .eml email export");
         const commandValue = String(command || "").trim();
         if (!commandValue) throw new Error("Command is required");
-
         setStep("read-eml");
         const text = await emlFile.text();
+        const { default: initZkEmail } = await import("@zk-email/sdk");
+        const { initNoirWasm } = await import("@zk-email/sdk/initNoirWasm");
+        setStep("init-sdk");
+        const sdk = initZkEmail({
+          baseUrl: "https://staging-conductor.zk.email",
+          logging: { enabled: true, level: "debug" },
+        });
+        setStep("get-blueprint");
+        const blueprint = await sdk.getBlueprint("benceharomi/X_HANDLE@v2");
+        // local noir circuit served from public/
+        blueprint.getNoirCircuit = async () => {
+          const url = `${import.meta.env.BASE_URL}x_handle_noir.json`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`Failed to load circuit at ${url}`);
+          return await res.json();
+        };
+        setStep("create-prover");
+        const prover = blueprint.createProver({ isLocal: true });
 
-        setStep("remote-proof-generation");
-        const proof = await remoteProve(
-          text,
-          platform.blueprintSlug,
-          commandValue,
-        );
+        const externalInputs = [
+          {
+            name: "command",
+            value: commandValue,
+          },
+        ];
+        setStep("init-noir");
+        const noirWasm = await initNoirWasm();
+        setStep("generate-proof");
+        const proof = await prover.generateProof(text, externalInputs, {
+          noirWasm,
+        });
+        setStep("offchain-verification");
+        const verification = await blueprint.verifyProof(proof, { noirWasm });
 
-        setResult({ proof, verification: { verified: true } });
+        // Do not submit onchain here; return result and allow a later submit action
+        setResult({ proof, verification });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        console.error(`${platform.label} proof error at`, step, e);
+        console.error("Twitter proof error at", step, e);
         setError(step ? `${msg} (at ${step})` : msg);
       } finally {
         setIsLoading(false);
       }
     },
-    [step, platform.blueprintSlug, platform.label],
+    [step]
   );
 
   const submit = useCallback(async () => {
-    if (!platform.verifiable || !platform.verifierAddress) {
-      setError("This platform does not support on-chain verification.");
-      return;
-    }
     setIsSubmitting(true);
     setError(null);
     try {
@@ -72,13 +111,10 @@ export function useProof(platform: PlatformConfig) {
       setStep("onchain-encode");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const proofAny: any = result.proof as any;
-      const rawProofData = proofAny.props.proofData! as string;
-      const proofData = (
-        rawProofData.startsWith("0x") ? rawProofData : `0x${rawProofData}`
-      ) as `0x${string}`;
+      const proofData = `0x${proofAny.props.proofData!}` as `0x${string}`;
       const publicOutputs = proofAny.props.publicOutputs! as `0x${string}`[];
       const encoded = await publicClient.readContract({
-        address: platform.verifierAddress,
+        address: CONTRACTS.sepolia.linkXHandleVerifier,
         abi: entrypointAbi,
         functionName: "encode",
         args: [proofData, publicOutputs],
@@ -86,26 +122,29 @@ export function useProof(platform: PlatformConfig) {
       setStep("onchain-submit");
       await writeContractAsync({
         abi: entrypointAbi,
-        address: platform.verifierAddress,
+        address: CONTRACTS.sepolia.linkXHandleVerifier,
         functionName: "entrypoint",
         args: [encoded],
       });
+      // Mark as submitted immediately; do not wait for confirmations here
       setHasSubmitted(true);
+      // Opportunistically refresh queries, but don't block UI
       void queryClient.invalidateQueries();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      console.error(`${platform.label} submit error at`, step, e);
+      console.error("Twitter submit error at", step, e);
       setError(step ? `${msg} (at ${step})` : msg);
     } finally {
       setIsSubmitting(false);
     }
-  }, [result, publicClient, writeContractAsync, queryClient, step, platform.verifierAddress, platform.label]);
+  }, [result, publicClient, writeContractAsync, queryClient, step]);
 
   const json = useMemo(
     () => (result ? JSON.stringify(result, null, 2) : ""),
-    [result],
+    [result]
   );
 
+  // After submit, poll to refresh verification status so UI updates without reload
   useEffect(() => {
     if (!hasSubmitted) return;
     let stopped = false;
@@ -135,7 +174,6 @@ export function useProof(platform: PlatformConfig) {
     error,
     result,
     json,
-    step,
     run,
     submit,
     reset,
