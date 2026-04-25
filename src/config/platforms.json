@@ -22,7 +22,8 @@
     "blueprintSlug": "zkemail/discord@v1",
     "commandTemplate": "Link my Discord handle to {ensName}",
     "verifierAddress": "0x6EBadDcb8e6acAd9049D306dEE90142F75805E24",
-    "estimatedProveDurationMs": 100000
+    "estimatedProveDurationMs": 100000,
+    "gmailQuery": "from:noreply@discord.com subject:\"Password reset request for Discord\""
   },
   {
     "key": "com.github",
