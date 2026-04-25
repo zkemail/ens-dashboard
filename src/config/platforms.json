@@ -19,7 +19,7 @@
     "placeholder": "username",
     "icon": "discord-logo.svg",
     "verifiable": true,
-    "blueprintSlug": "zkemail/discord@v1",
+    "blueprintSlug": "zkemail/discord@v2",
     "commandTemplate": "Link my Discord handle to {ensName}",
     "verifierAddress": "0x6EBadDcb8e6acAd9049D306dEE90142F75805E24",
     "estimatedProveDurationMs": 100000,
