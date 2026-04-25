@@ -76,13 +76,13 @@ export function useBenchmark() {
         const text = await emlFile.text();
 
         // Initialize SDK and Noir once (outside the loop for efficiency)
-        const { default: initZkEmail } = await import("@zk-email/sdk");
+        const { initZkEmailSdk: initZkEmail } = await import("@zk-email/sdk");
         const { initNoirWasm } = await import("@zk-email/sdk/initNoirWasm");
         const sdk = initZkEmail({
-          baseUrl: "https://dev-conductor.zk.email",
+          baseUrl: "https://staging-conductor.zk.email",
           logging: { enabled: false, level: "info" },
         });
-        const blueprint = await sdk.getBlueprint("benceharomi/x_handle@v1");
+        const blueprint = await sdk.getBlueprint("zkemail/twitter@v1");
         const prover = blueprint.createProver({ isLocal: true });
         const noirWasm = await initNoirWasm();
 
