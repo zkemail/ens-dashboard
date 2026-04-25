@@ -76,7 +76,7 @@ export function useBenchmark() {
         const text = await emlFile.text();
 
         // Initialize SDK and Noir once (outside the loop for efficiency)
-        const { default: initZkEmail } = await import("@zk-email/sdk");
+        const { initZkEmailSdk: initZkEmail } = await import("@zk-email/sdk");
         const { initNoirWasm } = await import("@zk-email/sdk/initNoirWasm");
         const sdk = initZkEmail({
           baseUrl: "https://staging-conductor.zk.email",
