@@ -21,7 +21,7 @@
     "verifiable": true,
     "blueprintSlug": "zkemail/discord@v1",
     "commandTemplate": "Link my Discord handle to {ensName}",
-    "verifierAddress": "0x3BFCF7604AD737d5a151434B6495ec551Aae054e",
+    "verifierAddress": "0x6EBadDcb8e6acAd9049D306dEE90142F75805E24",
     "estimatedProveDurationMs": 100000
   },
   {
