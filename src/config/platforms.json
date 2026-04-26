@@ -21,7 +21,7 @@
     "verifiable": true,
     "blueprintSlug": "zkemail/discord@v2",
     "commandTemplate": "Link my Discord handle to {ensName}",
-    "verifierAddress": "0x6EBadDcb8e6acAd9049D306dEE90142F75805E24",
+    "verifierAddress": "0xa16bc9275b55518280a1b6654cbdfe3880696112",
     "estimatedProveDurationMs": 100000,
     "gmailQuery": "from:noreply@discord.com subject:\"Password reset request for Discord\""
   },
