@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ConnectKitButton } from "connectkit";
 import { useAccount, useEnsName } from "wagmi";
+import { useNavigate } from "react-router-dom";
 import { useEnsNamesForAddress } from "../hooks/useEnsNames";
 import { NavBar } from "../components/NavBar";
 import { ThemeToggle } from "../components/ThemeToggle";
@@ -28,6 +29,8 @@ export function HomePage() {
   });
 
   const [showSubdomains, setShowSubdomains] = useState(false);
+  const [lookupName, setLookupName] = useState("");
+  const navigate = useNavigate();
 
   const { initialList, remainingSubdomains, subdomainCount } = useMemo(() => {
     const all = [...(ownedNames ?? [])].filter(Boolean);
@@ -159,6 +162,39 @@ export function HomePage() {
               </p>
               <div className="hero-actions">
                 <ConnectKitButton />
+              </div>
+              <div style={{ marginTop: 32 }}>
+                <p className="subtitle">or look up an ENS name</p>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const name = lookupName.trim();
+                    if (name) {
+                      navigate(`/name/${name}`, { state: { from: "home" } });
+                    }
+                  }}
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    marginTop: 12,
+                    justifyContent: "center",
+                  }}
+                >
+                  <input
+                    className="input"
+                    value={lookupName}
+                    onChange={(e) => setLookupName(e.target.value)}
+                    placeholder="lajos.eth"
+                    style={{ maxWidth: 240 }}
+                  />
+                  <button
+                    className="nav-cta"
+                    type="submit"
+                    disabled={!lookupName.trim()}
+                  >
+                    View
+                  </button>
+                </form>
               </div>
             </>
           )}
