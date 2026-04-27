@@ -154,6 +154,39 @@ export function HomePage() {
                   </button>
                 </div>
               )}
+              <div style={{ marginTop: 32 }}>
+                <p className="subtitle">or look up another ENS name</p>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const name = lookupName.trim();
+                    if (name) {
+                      navigate(`/name/${name}`, { state: { from: "home" } });
+                    }
+                  }}
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    marginTop: 12,
+                    justifyContent: "center",
+                  }}
+                >
+                  <input
+                    className="input"
+                    value={lookupName}
+                    onChange={(e) => setLookupName(e.target.value)}
+                    placeholder="lajos.eth"
+                    style={{ maxWidth: 240 }}
+                  />
+                  <button
+                    className="nav-cta"
+                    type="submit"
+                    disabled={!lookupName.trim()}
+                  >
+                    View
+                  </button>
+                </form>
+              </div>
             </>
           ) : (
             <>
