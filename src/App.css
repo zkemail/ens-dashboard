@@ -120,12 +120,14 @@
 
 .hero {
   text-align: center;
-  padding: 56px 0 20px;
+  padding-top: 56px;
+  padding-bottom: 20px;
 }
 
 /* Profile page layout */
 .profile {
-  padding: 32px 0 64px;
+  padding-top: 32px;
+  padding-bottom: 64px;
 }
 
 /* panels removed for a cleaner look */
