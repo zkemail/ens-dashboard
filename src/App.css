@@ -506,6 +506,7 @@
   }
   .record-label {
     font-size: 13px;
+    padding-top: 0;
   }
   .record-value {
     display: flex;
