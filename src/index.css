@@ -73,6 +73,12 @@ button {
   padding: 0 20px;
 }
 
+@media (max-width: 480px) {
+  .container {
+    padding: 0 12px;
+  }
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
