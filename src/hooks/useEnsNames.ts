@@ -1,249 +1,118 @@
 import { useQuery } from "@tanstack/react-query";
-import { createPublicClient, http, parseAbi } from "viem";
 import { sepolia } from "viem/chains";
-import { namehash } from "viem/ens";
 
 export type OrderBy = "createdAt" | "labelName" | "expiryDate" | "name";
 export type OrderDirection = "asc" | "desc";
 
-// ENS Registry contract address (same for Sepolia)
-const ENS_REGISTRY_ADDRESS =
-  "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e" as `0x${string}`;
-
-// ENS Registry ABI
-const ENS_REGISTRY_ABI = parseAbi([
-  "event Transfer(address indexed owner, address indexed to, uint256 indexed tokenId)",
-  "function owner(bytes32 node) view returns (address)",
-  "function resolver(bytes32 node) view returns (address)",
-]);
-
-// ENS Base Registrar ABI (ERC-721)
-const ENS_BASE_REGISTRAR_ABI = parseAbi([
-  "function balanceOf(address owner) view returns (uint256)",
-  "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
-  "function nameExpires(uint256 tokenId) view returns (uint256)",
-  "event NameRegistered(string name, bytes32 indexed label, address indexed owner, uint256 cost, uint256 expires)",
-  "event NameRenewed(string name, bytes32 indexed label, uint256 cost, uint256 expires)",
-]);
-
-// Event definitions for getLogs
-const NameRegisteredEvent = parseAbi([
-  "event NameRegistered(string name, bytes32 indexed label, address indexed owner, uint256 cost, uint256 expires)",
-])[0];
-
-const TransferEvent = parseAbi([
-  "event Transfer(address indexed owner, address indexed to, uint256 indexed tokenId)",
-])[0];
-
-// ENS Base Registrar address (same for Sepolia)
+// Sepolia ENS contracts. Token IDs minted by these are the names we want to list.
 const ENS_BASE_REGISTRAR_ADDRESS =
-  "0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85" as `0x${string}`;
-
-// Resolver ABI - for getting name from resolver
-const RESOLVER_ABI = parseAbi([
-  "function name(bytes32 node) view returns (string)",
-]);
+  "0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85";
+const ENS_NAME_WRAPPER_ADDRESS =
+  "0x0635513f179D50A207757E05759CbD106d7dFcE8";
 
 interface EnsNameInfo {
   name: string;
-  namehash: `0x${string}`;
   expiryDate?: number;
   createdAt?: number;
 }
 
-function getChainFromId(chainId?: number): typeof sepolia | undefined {
-  if (chainId === sepolia.id) return sepolia;
-  return undefined;
+interface AlchemyNft {
+  contract?: { address?: string };
+  tokenId?: string;
+  name?: string | null;
+  title?: string | null;
+  raw?: { metadata?: { name?: string } };
+  acquiredAt?: { blockTimestamp?: string };
 }
 
-async function resolveNameFromNamehash(
-  publicClient: ReturnType<typeof createPublicClient>,
-  registryAddress: `0x${string}`,
-  namehash: `0x${string}`,
+interface AlchemyNftsResponse {
+  ownedNfts?: AlchemyNft[];
+  pageKey?: string;
+}
+
+function getNftApiBase(): string {
+  const apiKey = import.meta.env.VITE_ALCHEMY_API_KEY;
+  return `https://eth-sepolia.g.alchemy.com/nft/v3/${apiKey}`;
+}
+
+// Alchemy's NFT API does not return ENS name metadata on Sepolia (`name`,
+// `title`, `tokenUri`, `raw.metadata` are all empty for both Base Registrar
+// and NameWrapper NFTs). Fall back to the ENS metadata service, which the
+// official ENS app uses.
+async function resolveEnsNameFromMetadata(
+  contract: string,
+  tokenId: string,
 ): Promise<string | null> {
   try {
-    // Get resolver address
-    const resolverAddress = await publicClient.readContract({
-      address: registryAddress,
-      abi: ENS_REGISTRY_ABI,
-      functionName: "resolver",
-      args: [namehash],
-    });
-
-    if (
-      !resolverAddress ||
-      resolverAddress === "0x0000000000000000000000000000000000000000"
-    ) {
-      return null;
-    }
-
-    // Try to get name from resolver
-    try {
-      const name = await publicClient.readContract({
-        address: resolverAddress,
-        abi: RESOLVER_ABI,
-        functionName: "name",
-        args: [namehash],
-      });
-      return name || null;
-    } catch {
-      return null;
-    }
+    const res = await fetch(
+      `https://metadata.ens.domains/sepolia/${contract}/${tokenId}`,
+    );
+    if (!res.ok) return null;
+    const body = (await res.json()) as { name?: string };
+    const name = body.name?.trim();
+    return name && name.includes(".") ? name : null;
   } catch {
     return null;
   }
 }
 
-function getRpcUrl(): string {
-  const apiKey = import.meta.env.VITE_ALCHEMY_API_KEY;
-  return `https://eth-sepolia.g.alchemy.com/v2/${apiKey}`;
-}
-
-async function getAllEnsNamesViaRpc(
+async function fetchOwnedEnsNames(
   address: `0x${string}`,
 ): Promise<EnsNameInfo[]> {
-  const rpcUrl = getRpcUrl();
-  const publicClient = createPublicClient({
-    chain: sepolia,
-    transport: http(rpcUrl),
-  });
+  const base = getNftApiBase();
+  const collected: AlchemyNft[] = [];
 
-  const registryAddress = ENS_REGISTRY_ADDRESS;
-  const registrarAddress = ENS_BASE_REGISTRAR_ADDRESS;
+  let pageKey: string | undefined;
+  do {
+    const url = new URL(`${base}/getNFTsForOwner`);
+    url.searchParams.set("owner", address);
+    url.searchParams.append("contractAddresses[]", ENS_BASE_REGISTRAR_ADDRESS);
+    url.searchParams.append("contractAddresses[]", ENS_NAME_WRAPPER_ADDRESS);
+    url.searchParams.set("withMetadata", "true");
+    url.searchParams.set("pageSize", "100");
+    if (pageKey) url.searchParams.set("pageKey", pageKey);
 
-  try {
-    const allNames = new Map<string, EnsNameInfo>();
-    const currentBlock = await publicClient.getBlockNumber();
-    const fromBlock = 0n; // Start from genesis for Sepolia
-
-    // Method 1: Query NameRegistered events from Base Registrar to get .eth names
-    // This gives us the actual name strings
-    try {
-      const nameRegisteredLogs = await publicClient.getLogs({
-        address: registrarAddress,
-        event: NameRegisteredEvent,
-        args: {
-          owner: address,
-        },
-        fromBlock,
-        toBlock: currentBlock,
-      });
-
-      for (const log of nameRegisteredLogs) {
-        if (log.args.name && log.args.label) {
-          const name = log.args.name as string;
-          const namehashValue = namehash(name);
-
-          // Verify current ownership
-          try {
-            const owner = await publicClient.readContract({
-              address: registryAddress,
-              abi: ENS_REGISTRY_ABI,
-              functionName: "owner",
-              args: [namehashValue],
-            });
-
-            if (owner.toLowerCase() === address.toLowerCase()) {
-              // Get expiry date
-              let expiryDate: number | undefined;
-              try {
-                // Convert bytes32 label to bigint for nameExpires call
-                const labelAsBigInt = BigInt(log.args.label as `0x${string}`);
-                const expires = await publicClient.readContract({
-                  address: registrarAddress,
-                  abi: ENS_BASE_REGISTRAR_ABI,
-                  functionName: "nameExpires",
-                  args: [labelAsBigInt],
-                });
-                expiryDate = Number(expires) * 1000;
-              } catch {
-                // Use expiry from event if available
-                if (log.args.expires) {
-                  expiryDate = Number(log.args.expires) * 1000;
-                }
-              }
-
-              allNames.set(namehashValue.toLowerCase(), {
-                name,
-                namehash: namehashValue,
-                expiryDate,
-                createdAt: Number(log.blockNumber) * 12000, // Approximate timestamp
-              });
-            }
-          } catch (error) {
-            console.warn(`Failed to verify ownership for ${name}:`, error);
-          }
-        }
-      }
-    } catch (error) {
-      console.warn("Error querying NameRegistered events:", error);
+    const res = await fetch(url.toString());
+    if (!res.ok) {
+      throw new Error(`Alchemy NFT API returned ${res.status}`);
     }
+    const body = (await res.json()) as AlchemyNftsResponse;
+    if (body.ownedNfts) collected.push(...body.ownedNfts);
+    pageKey = body.pageKey;
+  } while (pageKey);
 
-    // Method 2: Query Transfer events from ENS Registry for all names (including subdomains)
-    try {
-      const transferLogs = await publicClient.getLogs({
-        address: registryAddress,
-        event: TransferEvent,
-        args: {
-          to: address,
-        },
-        fromBlock,
-        toBlock: currentBlock,
-      });
+  const resolved = await Promise.all(
+    collected.map(async (nft) => {
+      const contract = nft.contract?.address;
+      const tokenId = nft.tokenId;
+      if (!contract || !tokenId) return null;
 
-      // Process Transfer events in parallel
-      const resolvePromises = transferLogs.map(async (log) => {
-        if (!log.args.tokenId) return;
+      const inlineName =
+        nft.name?.trim() ||
+        nft.title?.trim() ||
+        nft.raw?.metadata?.name?.trim() ||
+        null;
+      const name =
+        inlineName && inlineName.includes(".")
+          ? inlineName
+          : await resolveEnsNameFromMetadata(contract, tokenId);
+      if (!name) return null;
 
-        // Convert bigint tokenId to bytes32 hex string (pad to 32 bytes)
-        const tokenIdBigInt = log.args.tokenId as bigint;
-        const namehashValue = `0x${tokenIdBigInt
-          .toString(16)
-          .padStart(64, "0")}` as `0x${string}`;
-        const namehashKey = namehashValue.toLowerCase();
+      const acquired = nft.acquiredAt?.blockTimestamp;
+      return {
+        name,
+        createdAt: acquired ? Date.parse(acquired) : undefined,
+      } satisfies EnsNameInfo;
+    }),
+  );
 
-        // Skip if we already have this name from Method 1
-        if (allNames.has(namehashKey)) return;
-
-        try {
-          // Verify current ownership
-          const owner = await publicClient.readContract({
-            address: registryAddress,
-            abi: ENS_REGISTRY_ABI,
-            functionName: "owner",
-            args: [namehashValue],
-          });
-
-          if (owner.toLowerCase() === address.toLowerCase()) {
-            // Try to resolve name from resolver
-            const resolvedName = await resolveNameFromNamehash(
-              publicClient,
-              registryAddress,
-              namehashValue,
-            );
-
-            // If we can't resolve, we'll still include it with namehash as identifier
-            allNames.set(namehashKey, {
-              name: resolvedName || namehashValue,
-              namehash: namehashValue,
-              createdAt: Number(log.blockNumber) * 12000,
-            });
-          }
-        } catch (error) {
-          console.warn(`Failed to process namehash ${namehashValue}:`, error);
-        }
-      });
-
-      await Promise.all(resolvePromises);
-    } catch (error) {
-      console.warn("Error querying Transfer events:", error);
-    }
-
-    return Array.from(allNames.values());
-  } catch (error) {
-    console.error("Error fetching ENS names via RPC:", error);
-    return [];
+  const seen = new Map<string, EnsNameInfo>();
+  for (const info of resolved) {
+    if (!info) continue;
+    const key = info.name.toLowerCase();
+    if (!seen.has(key)) seen.set(key, info);
   }
+  return Array.from(seen.values());
 }
 
 export function useEnsNamesForAddress(params: {
@@ -256,40 +125,30 @@ export function useEnsNamesForAddress(params: {
 }) {
   const {
     address,
-    chainId,
     pageSize = 20,
     orderBy = "createdAt",
     orderDirection = "desc",
     searchString = "",
   } = params;
 
-  const chain = getChainFromId(chainId);
+  const isAddress = typeof address === "string" && address.startsWith("0x") && address.length === 42;
 
   const query = useQuery<EnsNameInfo[], Error>({
-    queryKey: ["ens-names-rpc", address?.toLowerCase(), sepolia.id],
-    enabled: Boolean(chain && address),
+    queryKey: ["ens-names-nft", address?.toLowerCase(), sepolia.id],
+    enabled: isAddress,
     queryFn: async () => {
-      if (!chain || !address) return [];
-      return getAllEnsNamesViaRpc(address);
+      if (!isAddress) return [];
+      return fetchOwnedEnsNames(address);
     },
   });
 
-  // Process and filter names
-  let names = (query.data ?? [])
-    .map((n) => {
-      // If name is just a namehash, try to normalize it or return empty
-      // For now, return namehash as identifier
-      return n.name && n.name !== n.namehash ? n.name : n.namehash;
-    })
-    .filter(Boolean) as string[];
+  let names = (query.data ?? []).map((n) => n.name).filter(Boolean) as string[];
 
-  // Apply search filter
   if (searchString) {
     const searchLower = searchString.toLowerCase();
     names = names.filter((name) => name.toLowerCase().includes(searchLower));
   }
 
-  // Apply sorting
   if (orderBy === "name") {
     names.sort((a, b) => {
       const comparison = a.localeCompare(b);
@@ -297,8 +156,8 @@ export function useEnsNamesForAddress(params: {
     });
   } else if (orderBy === "expiryDate" && query.data) {
     names.sort((a, b) => {
-      const aInfo = query.data!.find((n) => n.name === a || n.namehash === a);
-      const bInfo = query.data!.find((n) => n.name === b || n.namehash === b);
+      const aInfo = query.data!.find((n) => n.name === a);
+      const bInfo = query.data!.find((n) => n.name === b);
       const aExpiry = aInfo?.expiryDate ?? 0;
       const bExpiry = bInfo?.expiryDate ?? 0;
       const comparison = aExpiry - bExpiry;
@@ -306,8 +165,8 @@ export function useEnsNamesForAddress(params: {
     });
   } else if (orderBy === "createdAt" && query.data) {
     names.sort((a, b) => {
-      const aInfo = query.data!.find((n) => n.name === a || n.namehash === a);
-      const bInfo = query.data!.find((n) => n.name === b || n.namehash === b);
+      const aInfo = query.data!.find((n) => n.name === a);
+      const bInfo = query.data!.find((n) => n.name === b);
       const aCreated = aInfo?.createdAt ?? 0;
       const bCreated = bInfo?.createdAt ?? 0;
       const comparison = aCreated - bCreated;
@@ -315,7 +174,6 @@ export function useEnsNamesForAddress(params: {
     });
   }
 
-  // Apply pagination
   if (pageSize) {
     names = names.slice(0, pageSize);
   }
