@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ConnectKitButton } from "connectkit";
 import { useAccount, useEnsName } from "wagmi";
+import { sepolia } from "wagmi/chains";
 import { useNavigate } from "react-router-dom";
 import { useEnsNamesForAddress } from "../hooks/useEnsNames";
 import { NavBar } from "../components/NavBar";
@@ -9,11 +10,11 @@ import { NameCard } from "../components/NameCard";
 import { colorForName } from "../utils/color";
 
 export function HomePage() {
-  const { address, isConnected, chainId } = useAccount();
+  const { address, isConnected } = useAccount();
   const { data: ensName } = useEnsName({
     address,
     query: { enabled: Boolean(isConnected && address) },
-    chainId,
+    chainId: sepolia.id,
   });
 
   const {
@@ -22,7 +23,6 @@ export function HomePage() {
     error: namesError,
   } = useEnsNamesForAddress({
     address: (address ?? "0x") as `0x${string}`,
-    chainId,
     pageSize: 20,
     orderBy: "createdAt",
     orderDirection: "desc",
