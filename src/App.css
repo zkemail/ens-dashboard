@@ -63,6 +63,11 @@
   color: var(--text);
 }
 
+.nav-cta:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* New button styles for better visual hierarchy */
 .btn {
   display: inline-flex;

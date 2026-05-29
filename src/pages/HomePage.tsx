@@ -9,6 +9,72 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { NameCard } from "../components/NameCard";
 import { colorForName } from "../utils/color";
 
+const EXAMPLE_NAME = "lajos.eth";
+
+function LookupForm({
+  value,
+  onChange,
+  onSubmit,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  onSubmit: (name: string) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 8,
+        marginTop: 12,
+      }}
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const name = value.trim();
+          if (name) onSubmit(name);
+        }}
+        style={{ display: "flex", gap: 8 }}
+      >
+        <input
+          className="input"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="name.eth"
+          style={{ maxWidth: 240 }}
+        />
+        <button
+          className="nav-cta"
+          type="submit"
+          disabled={!value.trim()}
+        >
+          View
+        </button>
+      </form>
+      <p className="muted" style={{ margin: 0, fontSize: "0.9em" }}>
+        Try an example:{" "}
+        <button
+          type="button"
+          onClick={() => onSubmit(EXAMPLE_NAME)}
+          style={{
+            background: "none",
+            border: "none",
+            padding: 0,
+            font: "inherit",
+            color: "inherit",
+            textDecoration: "underline",
+            cursor: "pointer",
+          }}
+        >
+          {EXAMPLE_NAME}
+        </button>
+      </p>
+    </div>
+  );
+}
+
 export function HomePage() {
   const { address, isConnected } = useAccount();
   const { data: ensName } = useEnsName({
@@ -156,36 +222,13 @@ export function HomePage() {
               )}
               <div style={{ marginTop: 32 }}>
                 <p className="subtitle">or look up another ENS name</p>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const name = lookupName.trim();
-                    if (name) {
-                      navigate(`/name/${name}`, { state: { from: "home" } });
-                    }
-                  }}
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    marginTop: 12,
-                    justifyContent: "center",
-                  }}
-                >
-                  <input
-                    className="input"
-                    value={lookupName}
-                    onChange={(e) => setLookupName(e.target.value)}
-                    placeholder="lajos.eth"
-                    style={{ maxWidth: 240 }}
-                  />
-                  <button
-                    className="nav-cta"
-                    type="submit"
-                    disabled={!lookupName.trim()}
-                  >
-                    View
-                  </button>
-                </form>
+                <LookupForm
+                  value={lookupName}
+                  onChange={setLookupName}
+                  onSubmit={(name) =>
+                    navigate(`/name/${name}`, { state: { from: "home" } })
+                  }
+                />
               </div>
             </>
           ) : (
@@ -198,36 +241,13 @@ export function HomePage() {
               </div>
               <div style={{ marginTop: 32 }}>
                 <p className="subtitle">or look up an ENS name</p>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const name = lookupName.trim();
-                    if (name) {
-                      navigate(`/name/${name}`, { state: { from: "home" } });
-                    }
-                  }}
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    marginTop: 12,
-                    justifyContent: "center",
-                  }}
-                >
-                  <input
-                    className="input"
-                    value={lookupName}
-                    onChange={(e) => setLookupName(e.target.value)}
-                    placeholder="lajos.eth"
-                    style={{ maxWidth: 240 }}
-                  />
-                  <button
-                    className="nav-cta"
-                    type="submit"
-                    disabled={!lookupName.trim()}
-                  >
-                    View
-                  </button>
-                </form>
+                <LookupForm
+                  value={lookupName}
+                  onChange={setLookupName}
+                  onSubmit={(name) =>
+                    navigate(`/name/${name}`, { state: { from: "home" } })
+                  }
+                />
               </div>
             </>
           )}
