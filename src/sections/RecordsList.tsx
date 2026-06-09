@@ -16,18 +16,25 @@ import { placeholderForKey } from "../features/records/placeholders";
 import { getPlatform } from "../config/platforms";
 import { useProof } from "../features/proving/useProof";
 
+export type InitialPrefill = {
+  platformKey: RecordKey;
+  handle: string;
+};
+
 export function RecordsList({
   name,
   editing = false,
   onDirtyStateChange,
   pendingOAuthProof,
   onConsumePendingOAuthProof,
+  initialPrefill,
 }: {
   name: string;
   editing?: boolean;
   onDirtyStateChange?: (hasChanges: boolean) => void;
   pendingOAuthProof?: PendingOAuthProof | null;
   onConsumePendingOAuthProof?: () => void;
+  initialPrefill?: InitialPrefill;
 }) {
   const itemHandles = useRef<Record<RecordKey, RecordItemHandle | null>>(
     {} as Record<RecordKey, RecordItemHandle | null>,
@@ -39,6 +46,17 @@ export function RecordsList({
   useEffect(() => {
     onDirtyStateChange?.(dirtyKeys.size > 0);
   }, [dirtyKeys, onDirtyStateChange]);
+
+  const appliedPrefillRef = useRef(false);
+  useEffect(() => {
+    if (!initialPrefill || appliedPrefillRef.current) return;
+    if (!editing) return;
+    const handle = itemHandles.current[initialPrefill.platformKey];
+    if (!handle) return;
+    appliedPrefillRef.current = true;
+    handle.setDraft(initialPrefill.handle);
+    handle.scrollIntoView();
+  }, [editing, initialPrefill, dirtyKeys]);
 
   const onDirtyChange = (key: RecordKey, isDirty: boolean) => {
     setDirtyKeys((prev) => {
@@ -140,6 +158,8 @@ type RecordItemHandle = {
   resetDraft: () => void;
   hasChanges: () => boolean;
   isSaving: () => boolean;
+  setDraft: (value: string) => void;
+  scrollIntoView: () => void;
 };
 
 type RecordItemProps = {
@@ -234,6 +254,8 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pendingOAuthProof]);
 
+    const liRef = useRef<HTMLLIElement>(null);
+
     useImperativeHandle(ref, () => ({
       async saveIfDirty() {
         if (isUnchanged || isPending || isConfirming) return false;
@@ -249,13 +271,19 @@ const RecordItem = forwardRef<RecordItemHandle, RecordItemProps>(
       isSaving() {
         return Boolean(isPending || isConfirming);
       },
+      setDraft(value: string) {
+        onChange(value);
+      },
+      scrollIntoView() {
+        liRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      },
     }));
 
     const viewValue = originalValue;
     if (!editing && !viewValue) return null;
 
     return (
-      <li className="name-card">
+      <li className="name-card" ref={liRef}>
         <div className="record-grid">
           <div className="record-label">{label}</div>
 

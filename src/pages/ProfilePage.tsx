@@ -1,10 +1,16 @@
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import {
+  useParams,
+  useNavigate,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAccount } from "wagmi";
 import { NavBar } from "../components/NavBar";
 import { ThemeToggle } from "../components/ThemeToggle";
-import { RecordsList } from "../sections/RecordsList";
+import { RecordsList, type InitialPrefill } from "../sections/RecordsList";
 import { colorForName } from "../utils/color";
+import { resolvePlatformKey } from "../utils/prefillParams";
 import {
   PENDING_OAUTH_PROOF_KEY,
   type PendingOAuthProof,
@@ -16,8 +22,15 @@ export function ProfilePage() {
   const { ensName = "" } = useParams();
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: string } };
+  const [searchParams] = useSearchParams();
   const { isConnected } = useAccount();
-  const [editing, setEditing] = useState(false);
+  const initialPrefill = useMemo<InitialPrefill | undefined>(() => {
+    const platformKey = resolvePlatformKey(searchParams.get("platform"));
+    const handle = searchParams.get("handle");
+    if (!platformKey || !handle) return undefined;
+    return { platformKey, handle };
+  }, [searchParams]);
+  const [editing, setEditing] = useState(Boolean(initialPrefill));
   const [pendingOAuthProof, setPendingOAuthProof] =
     useState<PendingOAuthProof | null>(null);
   const hasUnsaved = useRef(false);
@@ -118,6 +131,7 @@ export function ProfilePage() {
             onDirtyStateChange={(dirty) => (hasUnsaved.current = dirty)}
             pendingOAuthProof={pendingOAuthProof}
             onConsumePendingOAuthProof={() => setPendingOAuthProof(null)}
+            initialPrefill={initialPrefill}
           />
         </section>
       </main>

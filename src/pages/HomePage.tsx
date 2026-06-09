@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ConnectKitButton } from "connectkit";
 import { useAccount, useEnsName } from "wagmi";
 import { sepolia } from "wagmi/chains";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEnsNamesForAddress } from "../hooks/useEnsNames";
 import { NavBar } from "../components/NavBar";
 import { ThemeToggle } from "../components/ThemeToggle";
@@ -97,6 +97,26 @@ export function HomePage() {
   const [showSubdomains, setShowSubdomains] = useState(false);
   const [lookupName, setLookupName] = useState("");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Deep-link entry: external tools (e.g. the Discord verification bot) can
+  // link to https://ens.zk.email?ens=<name>&platform=<key>&handle=<value>.
+  // Redirect to the profile page, forwarding the platform/handle params so
+  // ProfilePage can prefill the matching record row.
+  useEffect(() => {
+    const ens = searchParams.get("ens");
+    if (!ens) return;
+    const forwarded = new URLSearchParams();
+    const platform = searchParams.get("platform");
+    const handle = searchParams.get("handle");
+    if (platform) forwarded.set("platform", platform);
+    if (handle) forwarded.set("handle", handle);
+    const qs = forwarded.toString();
+    navigate(`/name/${ens}${qs ? `?${qs}` : ""}`, {
+      replace: true,
+      state: { from: "deeplink" },
+    });
+  }, [searchParams, navigate]);
 
   const { initialList, remainingSubdomains, subdomainCount } = useMemo(() => {
     const all = [...(ownedNames ?? [])].filter(Boolean);
