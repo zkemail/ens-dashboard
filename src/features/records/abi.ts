@@ -4,6 +4,10 @@ export const setTextAbi = parseAbi([
   "function setText(bytes32 node,string key,string value)",
 ]);
 
+export const ensRegistryAbi = parseAbi([
+  "function resolver(bytes32 node) view returns (address)",
+]);
+
 export const textRecordVerifierAbi = parseAbi([
   "function verifyTextRecord(bytes32 node,string key,string value) view returns (bool)",
 ]);
