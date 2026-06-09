@@ -78,6 +78,8 @@ export interface ProofModalProps {
   blueprintSlug?: string;
   /** Gmail search query for OAuth (e.g. from:info@x.com subject:"Password reset request") */
   gmailQuery?: string;
+  /** Path to return to after OAuth completes. Defaults to `/name/<ensName>`. */
+  oauthReturnPath?: string;
 }
 
 function friendlyError(raw: string): string {
@@ -132,6 +134,7 @@ export function ProofModal({
   platformKey,
   blueprintSlug,
   gmailQuery,
+  oauthReturnPath,
 }: ProofModalProps) {
   const {
     isLoading,
@@ -145,14 +148,38 @@ export function ProofModal({
     reset,
   } = hook;
 
-  const [useGoogleAuth, setUseGoogleAuth] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
+  // Touch-only devices (phones, tablets without a real file manager) can't
+  // realistically get a .eml file out of Gmail/iOS Mail/Outlook mobile, so
+  // the .eml drop zone is dead UI for them. We force Google-only there.
+  const [isTouchOnly, setIsTouchOnly] = useState(() =>
+    typeof window === "undefined"
+      ? false
+      : window.matchMedia("(pointer: coarse)").matches,
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(pointer: coarse)");
+    const handler = (e: MediaQueryListEvent) => setIsTouchOnly(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   const showGoogleOption = canUseGoogleSignIn({
     platformKey,
     blueprintSlug,
     gmailQuery,
   } as ProofModalProps);
+  const [useGoogleAuth, setUseGoogleAuth] = useState(
+    isTouchOnly && showGoogleOption,
+  );
+  const [file, setFile] = useState<File | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  // When viewport switches to touch-only mid-session (or we initially mounted
+  // before matchMedia settled), default to Google if available.
+  useEffect(() => {
+    if (isTouchOnly && showGoogleOption) setUseGoogleAuth(true);
+  }, [isTouchOnly, showGoogleOption]);
   const [progress, setProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const startRef = useRef<number | null>(null);
@@ -169,7 +196,7 @@ export function ProofModal({
     if (!open) return;
     if (!result) reset();
     setFile(null);
-    setUseGoogleAuth(false);
+    setUseGoogleAuth(isTouchOnly && showGoogleOption);
     setIsDragOver(false);
     setProgress(0);
     startRef.current = null;
@@ -239,7 +266,11 @@ export function ProofModal({
       open={open}
       onClose={handleClose}
       canClose={!isBusy}
-      title={`Prove ${platformName} handle from email (.eml)`}
+      title={
+        isTouchOnly && showGoogleOption
+          ? `Prove ${platformName} handle via Gmail`
+          : `Prove ${platformName} handle from email (.eml)`
+      }
       footer={
         <>
           <button className="link-cta" onClick={handleClose}>
@@ -318,10 +349,24 @@ export function ProofModal({
         ) : null}
         <ol className="help-text" style={{ margin: 0, paddingLeft: 18 }}>
           <li>Request a password reset email from {platformName}.</li>
-          <li>In your email client, download the email as .eml or sign in with Google.</li>
-          <li>Drop the .eml here or choose Sign in with Google below.</li>
+          {isTouchOnly && showGoogleOption ? (
+            <li>
+              Sign in with Google below. We'll find the email and generate a
+              proof automatically.
+            </li>
+          ) : (
+            <>
+              <li>
+                In your email client, download the email as .eml — or sign in
+                with Google.
+              </li>
+              <li>
+                Drop the .eml here, or choose Sign in with Google below.
+              </li>
+            </>
+          )}
         </ol>
-        {showGoogleOption ? (
+        {showGoogleOption && !isTouchOnly ? (
           <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
             <button
               type="button"
@@ -369,7 +414,7 @@ export function ProofModal({
                 sessionStorage.setItem(OAUTH_PLATFORM_KEY, platformKey!);
                 sessionStorage.setItem(
                   OAUTH_RETURN_PATH_KEY,
-                  `/name/${encodeURIComponent(ensName)}`,
+                  oauthReturnPath ?? `/name/${encodeURIComponent(ensName)}`,
                 );
                 const callbackUrl = `${window.location.origin}/auth/callback`;
                 const params = new URLSearchParams({

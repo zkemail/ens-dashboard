@@ -14,6 +14,12 @@ export const PENDING_OAUTH_PROOF_KEY = "pending_oauth_proof";
 export interface PendingOAuthProof {
   platform: string;
   result: unknown;
+  /**
+   * The URL path the OAuth flow was initiated from. Consumers can compare
+   * this to their current location to reject stale entries that belong to a
+   * different verification flow (different ENS, handle, etc.).
+   */
+  returnPath?: string;
 }
 
 interface BackendProofResponse {
@@ -123,7 +129,7 @@ export function AuthCallbackPage() {
         const result = transformBackendProof(data.proof, data.publicInputs);
         sessionStorage.setItem(
           PENDING_OAUTH_PROOF_KEY,
-          JSON.stringify({ platform, result }),
+          JSON.stringify({ platform, result, returnPath }),
         );
         sessionStorage.removeItem(OAUTH_RETURN_PATH_KEY);
         sessionStorage.removeItem(OAUTH_PLATFORM_KEY);
