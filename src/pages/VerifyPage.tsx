@@ -107,13 +107,42 @@ export function VerifyPage() {
   const [step, setStep] = useState<Step>(isConnected ? "confirm" : "connect");
   const [proofModalOpen, setProofModalOpen] = useState(false);
 
-  // Auto-advance from connect step once the wallet is connected.
+  // Track the active flow context so we can reset state when the user
+  // navigates from one /verify URL to a different one in the same tab —
+  // otherwise a stale hasSubmitted=true or pending OAuth result from the
+  // previous flow leaks into the new one.
+  const contextKey = `${ensName}|${handle}|${platformKey ?? ""}`;
+  const lastContextRef = useRef(contextKey);
+
+  const promptedConnectRef = useRef(false);
+  const consumedOAuthRef = useRef(false);
+
+  // Auto-advance into / demote out of the verify flow as the wallet state
+  // changes. A disconnect mid-flow must demote — the confirm/verify cards
+  // require a signer the user no longer has.
   useEffect(() => {
+    if (!isConnected) setProofModalOpen(false);
     setStep((current) => {
-      if (current === "connect" && isConnected) return "confirm";
+      if (isConnected && current === "connect") return "confirm";
+      if (!isConnected && (current === "confirm" || current === "verify"))
+        return "connect";
       return current;
     });
   }, [isConnected]);
+
+  // When the user navigates to a different /verify URL without unmounting
+  // (e.g. SPA navigation to a new ENS/handle/platform), drop any in-flight
+  // proof state and reopen the wallet prompt if needed.
+  useEffect(() => {
+    if (lastContextRef.current === contextKey) return;
+    lastContextRef.current = contextKey;
+    proofHook.reset();
+    consumedOAuthRef.current = false;
+    promptedConnectRef.current = false;
+    setStep(isConnected ? "confirm" : "connect");
+    setProofModalOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextKey, isConnected]);
 
   // Move to the done step once the on-chain submission is confirmed.
   useEffect(() => {
@@ -124,27 +153,34 @@ export function VerifyPage() {
   }, [proofHook.hasSubmitted]);
 
   // Auto-pop the connect modal once on mount when not connected — saves a tap.
-  const promptedConnectRef = useRef(false);
   useEffect(() => {
     if (!platform || isConnected || promptedConnectRef.current) return;
     promptedConnectRef.current = true;
     setConnectModalOpen(true);
   }, [platform, isConnected, setConnectModalOpen]);
 
-  // Pick up a pending OAuth proof when returning from Google sign-in. Same
-  // pattern as ProfilePage. We jump straight to the proof modal so the user
-  // can review and submit on-chain without re-uploading anything.
-  const consumedOAuthRef = useRef(false);
+  // Pick up a pending OAuth proof when returning from Google sign-in.
+  //
+  // Two gates beyond platform-match:
+  //  - Require a connected wallet. Without a signer the Submit button in
+  //    ProofModal can't do anything; auto-advancing to the verify step would
+  //    dead-end the user. We hold the entry until the wallet is connected,
+  //    then consume on the same re-run.
+  //  - Match the persisted `returnPath` against our current /verify URL.
+  //    A stale entry from a prior session (different ENS or handle) belongs
+  //    to that other flow; we preserve it so it can be consumed when the
+  //    user navigates back to the matching URL.
   useEffect(() => {
     if (consumedOAuthRef.current) return;
-    if (!platform) return;
+    if (!platform || !isConnected) return;
     const raw = sessionStorage.getItem(PENDING_OAUTH_PROOF_KEY);
     if (!raw) return;
+    const expectedReturnPath = `/verify?${searchParams.toString()}`;
     try {
       const parsed = JSON.parse(raw) as PendingOAuthProof;
       if (parsed?.platform !== platform.key) return;
-      sessionStorage.removeItem(PENDING_OAUTH_PROOF_KEY);
-      consumedOAuthRef.current = true;
+      if (parsed?.returnPath && parsed.returnPath !== expectedReturnPath)
+        return;
       const r = parsed.result as Record<string, unknown> | null;
       const proofProps =
         r && typeof r === "object"
@@ -153,8 +189,11 @@ export function VerifyPage() {
               | undefined)
           : undefined;
       if (!proofProps?.proofData || !Array.isArray(proofProps?.publicOutputs)) {
+        sessionStorage.removeItem(PENDING_OAUTH_PROOF_KEY);
         return;
       }
+      sessionStorage.removeItem(PENDING_OAUTH_PROOF_KEY);
+      consumedOAuthRef.current = true;
       proofHook.setResult?.(
         parsed.result as { proof: unknown; verification: unknown },
       );
@@ -164,7 +203,7 @@ export function VerifyPage() {
       sessionStorage.removeItem(PENDING_OAUTH_PROOF_KEY);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [platform]);
+  }, [platform, isConnected, searchParams]);
 
   if (!ensName || !platform || !handle || !platform.verifiable) {
     return (
@@ -246,7 +285,7 @@ export function VerifyPage() {
                 <button
                   type="button"
                   className="link-cta"
-                  onClick={() => setStep("connect")}
+                  onClick={() => setConnectModalOpen(true)}
                 >
                   Change wallet
                 </button>
