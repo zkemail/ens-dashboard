@@ -78,6 +78,8 @@ export interface ProofModalProps {
   blueprintSlug?: string;
   /** Gmail search query for OAuth (e.g. from:info@x.com subject:"Password reset request") */
   gmailQuery?: string;
+  /** Path to return to after OAuth completes. Defaults to `/name/<ensName>`. */
+  oauthReturnPath?: string;
 }
 
 function friendlyError(raw: string): string {
@@ -132,6 +134,7 @@ export function ProofModal({
   platformKey,
   blueprintSlug,
   gmailQuery,
+  oauthReturnPath,
 }: ProofModalProps) {
   const {
     isLoading,
@@ -369,7 +372,7 @@ export function ProofModal({
                 sessionStorage.setItem(OAUTH_PLATFORM_KEY, platformKey!);
                 sessionStorage.setItem(
                   OAUTH_RETURN_PATH_KEY,
-                  `/name/${encodeURIComponent(ensName)}`,
+                  oauthReturnPath ?? `/name/${encodeURIComponent(ensName)}`,
                 );
                 const callbackUrl = `${window.location.origin}/auth/callback`;
                 const params = new URLSearchParams({
