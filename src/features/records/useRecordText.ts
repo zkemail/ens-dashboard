@@ -1,6 +1,5 @@
 import {
   useAccount,
-  useEnsResolver,
   useEnsText,
   useReadContract,
   useWaitForTransactionReceipt,
@@ -12,14 +11,20 @@ import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { RecordKey } from "../../config/platforms";
 import { normalizeValueForKey, validateValueForKey } from "./validators";
-import { setTextAbi, textRecordVerifierAbi } from "./abi";
+import { ensRegistryAbi, setTextAbi, textRecordVerifierAbi } from "./abi";
 import { CONTRACTS } from "../../config/contracts";
 import { VERIFY_COMMAND_ENDPOINT } from "../../config/env";
 import { getPlatform, isPlatformVerifiable } from "../../config/platforms";
 
+/**
+ * Canonical ENS Registry address. Deployed deterministically at the same
+ * address on mainnet, Sepolia, and most testnets where ENS is active.
+ */
+const ENS_REGISTRY_ADDRESS =
+  "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e" as const;
+
 export function useRecordText(name: string, key: RecordKey) {
   const { chainId } = useAccount();
-  const { data: resolver } = useEnsResolver({ name, chainId });
   const { data, isLoading, refetch } = useEnsText({ name, key, chainId });
 
   const [draft, setDraft] = useState<string | undefined>(undefined);
@@ -48,6 +53,27 @@ export function useRecordText(name: string, key: RecordKey) {
   }, [key, platform]);
 
   const node = useMemo(() => namehash(name), [name]);
+
+  // Resolve the resolver address by reading the ENS Registry directly.
+  //
+  // We deliberately do NOT use wagmi's `useEnsResolver` here: that hook
+  // routes through the UniversalResolver, and on Sepolia (post-ENSv2
+  // rollout, ~May 2026) the UniversalResolver returns a read-only fallback
+  // resolver (`ENSV1Resolver`) for legacy v1 names. Writing `setText` to
+  // that fallback reverts — the function doesn't exist.
+  //
+  // The Registry's resolver pointer remains the writable PublicResolver
+  // for every legacy name (and is what new write-capable resolvers will
+  // be registered against going forward), so it's the correct write target.
+  const { data: resolver } = useReadContract({
+    address: ENS_REGISTRY_ADDRESS,
+    abi: ensRegistryAbi,
+    functionName: "resolver",
+    args: [node],
+    chainId,
+    query: { enabled: Boolean(name) },
+  });
+
   const { data: verifiedData, isLoading: isVerifying } = useReadContract({
     address: verifierAddress,
     abi: textRecordVerifierAbi,
