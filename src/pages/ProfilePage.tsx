@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAccount } from "wagmi";
+import { ConnectKitButton, useModal } from "connectkit";
 import { NavBar } from "../components/NavBar";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { RecordsList, type InitialPrefill } from "../sections/RecordsList";
@@ -24,6 +25,7 @@ export function ProfilePage() {
   const location = useLocation() as { state?: { from?: string } };
   const [searchParams] = useSearchParams();
   const { isConnected } = useAccount();
+  const { setOpen: setConnectModalOpen } = useModal();
   const initialPrefill = useMemo<InitialPrefill | undefined>(() => {
     const platformKey = resolvePlatformKey(searchParams.get("platform"));
     const handle = searchParams.get("handle");
@@ -31,6 +33,17 @@ export function ProfilePage() {
     return { platformKey, handle };
   }, [searchParams]);
   const [editing, setEditing] = useState(Boolean(initialPrefill));
+
+  // Deep-link arrivals (with a prefilled record from an external tool like
+  // the Discord verification bot) need a wallet to save records. Auto-open
+  // the ConnectKit modal once so they're not dead-ended on a page with no
+  // visible connect entry point.
+  const promptedConnectRef = useRef(false);
+  useEffect(() => {
+    if (!initialPrefill || isConnected || promptedConnectRef.current) return;
+    promptedConnectRef.current = true;
+    setConnectModalOpen(true);
+  }, [initialPrefill, isConnected, setConnectModalOpen]);
   const [pendingOAuthProof, setPendingOAuthProof] =
     useState<PendingOAuthProof | null>(null);
   const hasUnsaved = useRef(false);
@@ -66,6 +79,7 @@ export function ProfilePage() {
         right={
           <>
             <ThemeToggle />
+            <ConnectKitButton />
             {location.state?.from === "home" && (
               <button className="nav-cta" onClick={() => navigate(-1)}>
                 Back
@@ -90,9 +104,20 @@ export function ProfilePage() {
           </div>
 
           {!isConnected && (
-            <p className="subtitle" style={{ textAlign: "center" }}>
-              Connect your wallet to load resolver records.
-            </p>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 12,
+                marginTop: 12,
+              }}
+            >
+              <p className="subtitle" style={{ textAlign: "center", margin: 0 }}>
+                Connect your wallet to load resolver records.
+              </p>
+              <ConnectKitButton />
+            </div>
           )}
 
           <div
